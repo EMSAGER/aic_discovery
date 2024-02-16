@@ -18,6 +18,9 @@ app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 connect_db(app)
 toolbar = DebugToolbarExtension(app)
 
+##############################################################################
+# User signup/login/logout
+
 
 @app.before_request
 def add_user_to_g():
@@ -44,10 +47,6 @@ def do_logout():
 
 
 
-
-@app.route('/')
-def home_page():
-    return render_template('index.html')
 
 @app.route('/signup', methods=["GET", "POST"])
 def signup():
@@ -82,3 +81,38 @@ def signup():
 
     else:
         return render_template('users/signup.html', form=form)
+
+@app.route('/login', methods=["GET", "POST"])
+def login():
+    """Handle user login."""
+
+    form = LoginForm()
+
+    if form.validate_on_submit():
+        user = User.authenticate(form.username.data,
+                                 form.password.data)
+
+        if user:
+            do_login(user)
+            flash(f"Hello, {user.full_name}!", "success")
+            return redirect("/")
+
+        flash("Invalid credentials.", 'danger')
+
+    return render_template('users/login.html', form=form)
+
+
+@app.route('/logout')
+def logout():
+    """Handle logout of user."""
+    session.pop('curr_user', None)
+    flash(f"Goodbye!", "primary")
+    return redirect('/login')
+
+
+##############################################################################
+# Homepage
+
+@app.route('/')
+def home_page():
+    return render_template('index.html')

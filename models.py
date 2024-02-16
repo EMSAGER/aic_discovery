@@ -18,16 +18,27 @@ class User(db.Model):
     
     favorites = db.relationship('Favorite', backref='users')
 
+    @property
+    def full_name(self):
+        """Return full name of user."""
+
+        return f"{self.first_name} {self.last_name}"
+    
     @classmethod
-    def register(cls, username, pwd, email, first_name, last_name):
+    def signup(cls, username, password, email, first_name, last_name):
         """Register user w/hashed password & return user."""
 
-        hashed = bcrypt.generate_password_hash(pwd)
-        # turn bytestring into normal (unicode utf8) string
-        hashed_utf8 = hashed.decode("utf8")
-
+        hashed_pwd = bcrypt.generate_password_hash(password).decode('UTF-8')
         # return instance of user w/username and hashed pwd
-        return cls(username=username, password=hashed_utf8, email=email, first_name=first_name, last_name=last_name)
+        user = User(
+            username=username,
+            password=hashed_pwd,
+            email=email,
+            first_name=first_name,
+            last_name=last_name
+        )
+        db.session.add(User)
+        return user
 
     @classmethod
     def authenticate(cls, username, pwd):
@@ -43,6 +54,8 @@ class User(db.Model):
             return u
         else:
             return False
+    
+    
 
 class Artist(db.Model):
     __tablename__ = 'artists'
