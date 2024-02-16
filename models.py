@@ -79,7 +79,7 @@ class Classification(db.Model):
 
 class Artwork_Classification(db.Model):
     __tablename__ = 'artwork_classification'
-    artwork_id = db.Column(db.Integer, db.ForeignKey('artwork.id'), primary_key=True)
+    artwork_id = db.Column(db.Integer, db.ForeignKey('artworks.id'), primary_key=True)
     classification_name = db.Column(db.String, db.ForeignKey('classification.name'), primary_key=True)
     artwork = db.relationship('Artwork', backref=db.backref('artwork_classifications', cascade="all, delete-orphan"), lazy=True)
 
@@ -89,4 +89,14 @@ class Favorites(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     artist_id = db.Column(db.Integer, db.ForeignKey('artists.id'), nullable=False)
-    artwork_id = db.Column(db.Integer, db.ForeignKey('artworks.id', nullable=False))
+    artwork_id = db.Column(db.Integer, db.ForeignKey('artworks.id'), nullable=False)
+
+def connect_db(app):
+    """Connect this database to provided Flask app.
+
+    You should call this in your Flask app.
+    """
+    with app.app_context():
+        db.app = app
+        db.init_app(app)
+        db.create_all()

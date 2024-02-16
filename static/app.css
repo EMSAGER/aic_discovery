@@ -1,0 +1,12 @@
+.navbar {
+    background: url('/static/images/Landscape6.png') repeat center center;
+    background-size: cover;
+}
+
+.navbar-brand, .nav-link {
+    color: white; 
+}
+
+.navbar * {
+    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.7);
+}
