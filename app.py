@@ -1,6 +1,6 @@
 from flask import Flask, render_template, redirect, session, flash, g
 from flask_debugtoolbar import DebugToolbarExtension
-from models import connect_db, db, User, Favorites, Artist, Artwork, Artwork_Classification, Classification
+from models import connect_db, db, User, Favorite, Artist, Artwork, Artwork_Classification, Classification, Century
 from forms import UserEditForm, UserForm, LoginForm, FavoriteForm
 from sqlalchemy.exc import IntegrityError
 
@@ -59,29 +59,35 @@ def signup():
     If the there already is a user with that username: flash message
     and re-present form.
     """
+    if not Century.query.first():
+        centuries = ['19th Century', '20th Century', '21st Century']
+        for name in centuries:
+            if not Century.query.filter_by(Century_name=name).first():
+                century = Century(century_name=name)
+                db.session.add(century)
+            db.session.commit()
     form = UserForm()
+    form.century_id.choices = [(c.id, c.century_name)for c in Century.query.order_by(Century.id).all()]
     if form.validate_on_submit():
         try:
             user = User.signup(
                 username=form.username.data,
                 password=form.password.data,
                 email=form.email.data,
-                first_name = form.first_name.data,
-                last_name = form.last_name.data
+                first_name=form.first_name.data,
+                last_name=form.last_name.data,
+                century_id=form.century_id.data  
             )
+            db.session.add(user)
             db.session.commit()
-
+            flash("User successfully registered.", 'success')
+            return redirect('/')
         except IntegrityError:
+            db.session.rollback()
             flash("Username already taken", 'danger')
-            return render_template('users/signup.html', form=form)
-
-        do_login(user)
-
-        return redirect("/")
-
-    else:
-        return render_template('users/signup.html', form=form)
-
+    
+    return render_template('/users/signup.html', form=form)
+            
 @app.route('/login', methods=["GET", "POST"])
 def login():
     """Handle user login."""

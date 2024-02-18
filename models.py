@@ -15,8 +15,10 @@ class User(db.Model):
     email = db.Column(db.String(50), nullable=False)
     first_name = db.Column(db.String(30))
     last_name = db.Column(db.String(30))
+    century_id = db.Column(db.Integer, db.ForeignKey('centuries.id'), nullable=False)
     
-    favorites = db.relationship('Favorite', backref='users')
+    favorites = db.relationship('Favorite', backref='user')
+    century = db.relationship('Century', backref='users')
 
     @property
     def full_name(self):
@@ -25,7 +27,7 @@ class User(db.Model):
         return f"{self.first_name} {self.last_name}"
     
     @classmethod
-    def signup(cls, username, password, email, first_name, last_name):
+    def signup(cls, username, password, email, first_name, last_name, century_id):
         """Register user w/hashed password & return user."""
 
         hashed_pwd = bcrypt.generate_password_hash(password).decode('UTF-8')
@@ -35,9 +37,10 @@ class User(db.Model):
             password=hashed_pwd,
             email=email,
             first_name=first_name,
-            last_name=last_name
+            last_name=last_name,
+            century_id=century_id
         )
-        db.session.add(User)
+        db.session.add(user)
         return user
 
     @classmethod
@@ -80,29 +83,35 @@ class Artwork(db.Model):
     dimensions = db.Column(db.String(255))
     on_view = db.Column(db.Boolean, default=False)
     on_loan = db.Column(db.Boolean, default=False)
-    classification_id = db.Column(db.String, db.ForeignKey('classification.name'))
+    classification_id = db.Column(db.String, db.ForeignKey('classifications.name'))
     image_id = db.Column(db.String(255))
     
     classification = db.relationship('Classification', backref='artworks', lazy=True)
 
 class Classification(db.Model):
-    __tablename__ = 'classification'
+    __tablename__ = 'classifications'
     name = db.Column(db.String, primary_key=True)
-    artwork_classification = db.relationship('Artwork', backref='classification', lazy=True)
-
+    artwork_classification = db.relationship('Artwork', backref='classified_as', lazy=True)
+    
 class Artwork_Classification(db.Model):
-    __tablename__ = 'artwork_classification'
+    __tablename__ = 'artwork_classifications'
     artwork_id = db.Column(db.Integer, db.ForeignKey('artworks.id'), primary_key=True)
-    classification_name = db.Column(db.String, db.ForeignKey('classification.name'), primary_key=True)
+    classification_name = db.Column(db.String, db.ForeignKey('classifications.name'), primary_key=True)
     artwork = db.relationship('Artwork', backref=db.backref('artwork_classifications', cascade="all, delete-orphan"), lazy=True)
 
 
-class Favorites(db.Model):
+class Favorite(db.Model):
     __tablename__= 'favorites'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     artist_id = db.Column(db.Integer, db.ForeignKey('artists.id'), nullable=False)
     artwork_id = db.Column(db.Integer, db.ForeignKey('artworks.id'), nullable=False)
+
+class Century(db.Model):
+    __tablename__= 'centuries'
+    id = db.Column(db.Integer, primary_key=True)
+    century_name = db.Column(db.Text, unique=True, nullable=False)
+    
 
 def connect_db(app):
     """Connect this database to provided Flask app.
