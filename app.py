@@ -38,6 +38,16 @@ def add_user_to_g():
     else:
         g.user = None
 
+@app.context_processor
+def inject_user():
+    """This function will run before templates 
+    are rendered and will inject the user variable 
+    into the context of all templates, making it 
+    unnecessary to manually pass the user variable in 
+    each render_template call.
+
+"""
+    return dict(user=g.user)
 
 def do_login(user):
     """Log in user."""
@@ -88,7 +98,7 @@ def signup():
             db.session.commit()
             do_login(user)
             flash("User successfully registered.", 'success')
-            return render_template("/users/profile")
+            return redirect('/users/profile') 
         
         except IntegrityError:
             db.session.rollback()
@@ -109,7 +119,7 @@ def login():
         if user:
             do_login(user)
             flash(f"Hello, {user.full_name}!", "success")
-            return redirect("/")
+            return redirect("/users/profile")
 
         flash("Invalid credentials.", 'danger')
 
@@ -146,27 +156,41 @@ def user_profile():
     if date_range:
         query_params = {
             'q': f'date_start:{date_range}',
-            'limit': 10,
-            'fields': 'id,title,image_id,dimensions,medium_display,artist_title'  # Adjust fields as needed
+            'limit': 20,
+            'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display'  
         }
         try:
             response = requests.get(API_URL, headers=HEADER, params=query_params)
-            res_data = response.json()
-            artworks = res_data.get('data', [])
-            if artworks:
-                selected_artwork = random.choice(artworks)
-                image_id = selected_artwork['image_id']
-                image_url = f"https://www.artic.edu/iiif/2/{image_id}/full/843,/0/default.jpg"
+            if response.status_code == 200:
+                res_data = response.json()
+                artworks = res_data.get('data', [])
+                artworks_details = [{
+                    'title': artwork.get('title'),
+                    'artist_name': artwork.get('artist_title'),
+                    'artist_display' : artwork.get('artist_display', ''),
+                    'date': f"{artwork.get('date_start', '')} - {artwork.get('date_end', '')}",
+                    'date_display': artwork.get('date_display', ''),
+                    'medium_display': artwork.get('medium_display', ''),
+                    'dimensions': artwork.get('dimensions', ''),
+                    'image_url': f"https://www.artic.edu/iiif/2/{artwork['image_id']}/full/843,/0/default.jpg" if artwork.get('image_id') else None
+                } for artwork in artworks]
+                if artworks:
+                    selected_artwork = random.choice(artworks_details)
+                else:
+                    selected_artwork = None
             else:
-                image_url = None
-                flash("No artwork found for the selected century.", "warning")
+                artworks_details = []
+                selected_artwork = None
+                flash("Failed to fetch artworks from the API.", "danger")
         except requests.RequestException:
-            image_url = None
+            artworks_details = []
+            selected_artwork = None
             flash("Error connecting to the Art Institute of Chicago API.", "danger")
     else:
-        image_url = None
+        artworks_details = []
+        selected_artwork = None
         flash("Invalid century selection.", "danger")
-    return render_template("users/profile.html", user=g.user, image_url=image_url)
+    return render_template("users/profile.html", user=user, artworks_details=artworks_details, artworks=selected_artwork)
 
 @app.route('/users/profile/edit', methods=["GET", "POST"])
 def edit_profile():

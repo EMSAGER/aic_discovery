@@ -16,19 +16,21 @@
     <nav class="navbar navbar-expand">
         <div class="container-fluid">
           <div class="navbar-header">
+            {% if not g.user %}
             <a href="/" class="navbar-brand">
               <span>AIC Discovery</span>
             </a>
           </div>
-
-            {% if not g.user %}
             <li><a href="/signup">Sign up</a></li>
             <li><a href="/login">Log in</a></li>
             {% else %}
-            <a class="navbar-form navbar-left" href="/favorites">Favorites</a>
-            <a class="navbar-form navbar-left" href="/suprise">Suprise Me!</a>
-            <a href="/users/profile">Profile</a>
-            <a href="/logout">Log out</a>
+            <a href="/users/profile" class="navbar-brand">
+              <span>{{user.full_name}}</span>
+            </a>
+          </div>
+            <a class="navbar-form navbar-left text-dark" href="/favorites">Favorites</a>
+            <a class="navbar-form navbar-left text-dark" href="/suprise">Suprise Me!</a>
+            <a class="navbar-form navbar-left text-dark" href="/logout">Log out</a>
             {% endif %}
         </ul>
     </div>
