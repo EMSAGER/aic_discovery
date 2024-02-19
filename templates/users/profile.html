@@ -3,20 +3,36 @@
 {% block body_class %}profile{% endblock %}
 
 {% block content %}
+<div class="container mt-5">
+    <div class="row align-items-start">
+        <!-- Sidebar with Artwork Details -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ artworks.title }}</h5>
+                    <p class="card-text">Artist: {{ artworks.artist_name }}</p>
+                    <p class="card-text">Date: {{ artworks.date_display }}</p>
+                    <p class="card-text">Medium: {{ artworks.medium_display }}</p>
+                    <p class="card-text">Artist Biography: {{ artworks.artist_display }}</p>
+                    <p class="card-text">Dimensions: {{ artworks.dimensions }}</p>
+                </div>
+            </div>
+        </div>
+        <!-- Artwork Image -->
+        <div class="col-md-6">
+            <img src="{{ artworks.image_url }}" class="img-fluid" alt="Artwork image">
+        </div>
+        <!-- Column for buttons -->
+        <div class="col-md-3 d-flex flex-column justify-content-start">
+            <!-- Like Button -->
+            <a href="/users/like" class="btn btn-success mb-2"><i class="fa-regular fa-thumbs-up"></i> Like</a>
+            <!-- Dislike Button -->
+            <a href="/users/dislike" class="btn btn-danger"><i class="fa-regular fa-thumbs-down"></i> Dislike</a>
+        </div>
+    </div>
+</div>
 
-  <div class="row justify-content-md-center">
-  <div class="col-md-7 col-lg-5">
-    <div class="container">
-        <div class="artwork">
-        <h3>{{ artworks.title }}</h3>
-        <p>Artist: {{ artworks.artist_name }}</p>
-        <p>Date: {{artworks.date_display}}</p>
-        <p>Medium: {{artworks.medium_display}}</p>
-        <p>Artist Biography: {{artworks.artist_display}}</p>
-        <p>Dimensions: {{artworks.dimensions}}</p>
-        <img src="{{ artworks.image_url }}" alt="Artwork image">
-    </div>
-    </div>
-    </div>
 
 {% endblock %}
+
+
