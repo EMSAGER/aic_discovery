@@ -20,31 +20,19 @@
               <span>AIC Discovery</span>
             </a>
           </div>
-          <ul class="nav navbar-nav navbar-right">
-            {% if request.endpoint != None %}
-            <li>
-              <form class="navbar-form navbar-right" action="/users">
-                <input name="q" class="form-control" placeholder="Search Art Institute of Chicago" id="search">
-                <button class="btn btn-default">
-                  <span class="fa fa-search"></span>
-                </button>
-              </form>
-            </li>
-            {% endif %}
+
             {% if not g.user %}
             <li><a href="/signup">Sign up</a></li>
             <li><a href="/login">Log in</a></li>
             {% else %}
-            <li>
-              <a href="/users/{{ g.user.id }}">
-                <!-- <img src="{{ g.user.username }}" alt="{{ g.user.username }}"> -->
-              </a>
-            </li>
-            <li><a href="/messages/new">New Message</a></li>
-            <li><a href="/logout">Log out</a></li>
+            <a class="navbar-form navbar-left" href="/favorites">Favorites</a>
+            <a class="navbar-form navbar-left" href="/suprise">Suprise Me!</a>
+            <a href="/users/profile">Profile</a>
+            <a href="/logout">Log out</a>
             {% endif %}
-          </ul>
-        </div>
+        </ul>
+    </div>
+</nav>
       </nav>
       <div class="container">
         {% for category, message in get_flashed_messages(with_categories=True) %}
@@ -55,7 +43,8 @@
 
     <script src="https://unpkg.com/axios/dist/axios.js"></script>
     <script src="https://unpkg.com/jquery"></script>
-    <script src="https://unpkg.com/popper"></script>
+    <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
+
     <script src="https://unpkg.com/bootstrap"></script>
     <script src="/static/app.js"></script>
 </body>
