@@ -10,7 +10,7 @@ def save_artwork(artwork_detail):
         db.session.commit()
 
     # Create a new Artwork instance and associate it with the artist
-    new_artwork = Artwork(
+    artwork_detail = Artwork(
         title=artwork_detail['title'],
         artist_id=artist.id,  
         date_start=artwork_detail.get('date_start'),
