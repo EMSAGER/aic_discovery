@@ -19,6 +19,7 @@ class UserEditForm(FlaskForm):
     """Form for editing users"""
     username = StringField('Username')
     email = StringField('E-mail',validators=[Optional(), Email(message='Invalid email')])
+    century_id = SelectField("Century", coerce=int, validators=[InputRequired()])
     password = PasswordField('Password')
     
 class FavoriteForm(FlaskForm):

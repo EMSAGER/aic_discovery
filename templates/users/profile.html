@@ -9,18 +9,19 @@
         <div class="col-md-3">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">{{ artworks.title }}</h5>
-                    <p class="card-text">Artist: {{ artworks.artist_name }}</p>
-                    <p class="card-text">Date: {{ artworks.date_display }}</p>
-                    <p class="card-text">Medium: {{ artworks.medium_display }}</p>
-                    <p class="card-text">Artist Biography: {{ artworks.artist_display }}</p>
-                    <p class="card-text">Dimensions: {{ artworks.dimensions }}</p>
+                    <h5 class="card-title">{{ selected_artwork.title }}</h5>
+                    <p class="card-text">Artist: {{ selected_artwork.artist_title }}</p>
+                    <p class="card-text">Date: {{ selected_artwork.date_display }}</p>
+                    <p class="card-text">Medium: {{ selected_artwork.medium_display }}</p>
+                    <p class="card-text">Dimensions: {{ selected_artwork.dimensions }}</p>
+                    <p class="card-text">Biography: {{ selected_artwork.artist_display }}</p>
+
                 </div>
             </div>
         </div>
         <!-- Artwork Image -->
         <div class="col-md-6">
-            <img src="{{ artworks.image_url }}" class="img-fluid" alt="Artwork image">
+            <img src="{{ selected_artwork.image_url }}" class="img-fluid" alt="Artwork image">
         </div>
         <!-- Column for buttons -->
         <div class="col-md-3 d-flex flex-column justify-content-start">

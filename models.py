@@ -63,43 +63,44 @@ class User(db.Model):
 class Artist(db.Model):
     __tablename__ = 'artists'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name_title = db.Column(db.String(50), nullable = False)
-    alt_title = db.Column(db.String(50))
-    birth_date = db.Column(db.Date)
-    death_date = db.Column(db.Date)
-    description = db.Column(db.String(255))
+    artist_title = db.Column(db.Text)
+    artist_display = db.Column(db.Text)
+    
     
     artworks = db.relationship('Artwork',  cascade="all,delete", backref='artist', lazy=True)
+
 
 class Artwork(db.Model):
     __tablename__= 'artworks'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    title = db.Column(db.String(50), nullable=False)
+    title = db.Column(db.Text, nullable=False)
     artist_id = db.Column(db.Integer, db.ForeignKey('artists.id'), nullable=False)
-    edu_material = db.Column(db.Boolean, default=False)
     date_start = db.Column(db.Date)
     date_end = db.Column(db.Date)
-    artist_display = db.Column(db.String(255))
+    medium_display = db.Column(db.String(255))
     dimensions = db.Column(db.String(255))
     on_view = db.Column(db.Boolean, default=False)
     on_loan = db.Column(db.Boolean, default=False)
-    classification_id = db.Column(db.String, db.ForeignKey('classifications.name'))
+    style_title = db.Column(db.String, db.ForeignKey('styles.name'))
     image_id = db.Column(db.String(255))
+    image_url = db.Column(db.Text, nullable = False)
     
-    classification = db.relationship('Classification', backref='artworks', lazy=True)
+    styles = db.relationship('Style', backref='artworks', lazy=True)
 
-class Classification(db.Model):
-    __tablename__ = 'classifications'
+    @property
+    def artist_title(self):
+        """returns the artist's name"""
+        return self.artist.artist_title
+    
+    @property
+    def artist_display(self):
+        """If available, it returns the artist's biography"""
+        return self.artist.artist_display
+
+class Style(db.Model):
+    __tablename__ = 'styles'
     name = db.Column(db.String, primary_key=True)
-    artwork_classification = db.relationship('Artwork', backref='classified_as', lazy=True)
     
-class Artwork_Classification(db.Model):
-    __tablename__ = 'artwork_classifications'
-    artwork_id = db.Column(db.Integer, db.ForeignKey('artworks.id'), primary_key=True)
-    classification_name = db.Column(db.String, db.ForeignKey('classifications.name'), primary_key=True)
-    artwork = db.relationship('Artwork', backref=db.backref('artwork_classifications', cascade="all, delete-orphan"), lazy=True)
-
-
 class Favorite(db.Model):
     __tablename__= 'favorites'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -121,4 +122,5 @@ def connect_db(app):
     with app.app_context():
         db.app = app
         db.init_app(app)
+        db.drop_all()
         db.create_all()

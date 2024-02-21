@@ -22,14 +22,14 @@
               <span>AIC Discovery</span>
             </a>
           </div>
-            <li><a href="/signup">Sign up</a></li>
-            <li><a href="/login">Log in</a></li>
+            <a class="navbar-form navbar-left text-dark" href="/signup">Sign up</a>
+            <a class="navbar-form navbar-left text-dark" href="/login">Log in</a>
             {% else %}
-            <a href="/users/profile" class="navbar-brand">
+            <a href="/users/profile" class="navbar-brand text-lg">
               <span>{{user.full_name}}</span>
             </a>
           </div>
-            <a class="navbar-form navbar-left text-dark" href="/users/edit">Edit Profile</a>
+            <a class="navbar-form navbar-left text-dark" href="/users/profile/edit">Edit Profile</a>
             <a class="navbar-form navbar-left text-dark" href="/favorites">Favorites</a>
             <a class="navbar-form navbar-left text-dark" href="/suprise">Suprise Me!</a>
             <a class="navbar-form navbar-left text-dark" href="/logout">Log out</a>
