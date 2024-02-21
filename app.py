@@ -2,7 +2,7 @@ from flask import Flask, render_template, redirect, session, flash, g, jsonify
 import requests
 import random
 from flask_debugtoolbar import DebugToolbarExtension
-from models import connect_db, db, User, Favorite, Artist, Artwork, Style, Century
+from models import connect_db, db, User, Favorite, Artist, Artwork, Classification, Century
 from forms import UserEditForm, UserForm, LoginForm, FavoriteForm
 from sqlalchemy.exc import IntegrityError
 from artwork import save_artwork
@@ -159,18 +159,16 @@ def user_profile():
         return redirect("/")
     
     user = User.query.get_or_404(session['curr_user']) 
-    user_century = Century.query.get_or_404(g.user.century_id).century_name
+    user_century = Century.query.get(g.user.century_id).century_name
     century_dates ={
         '19th Century': ('1801', '1899'),
         '20th Century': ('1901', '1999'),
         '21st Century': ('2001', '2099'),
     }
     date_range = century_dates.get(user_century)
-    if date_range:
-        query_params = {
-            'date_start': date_range[0],
-            'date_end': date_range[1],
-            'limit': 20,
+    query_params = {
+            'limit': 10,
+            'page' : 3,
             'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display, on_view, on_loan, style_title'
         }
     try:
@@ -179,23 +177,23 @@ def user_profile():
         if response.status_code == 200:
             res_data = response.json()
             artworks = res_data.get('data', [])
+            date_range = [int(date_range[0]), int(date_range[1])]
             artworks_details = [{
                 'title': artwork.get('title'),
                 'artist_title': artwork.get('artist_title', 'Unknown Artist'),
                 'artist_display' : artwork.get('artist_display', ''),
-                'date': f"{artwork.get('date_start', '')} - {artwork.get('date_end', '')}",
+                'date_start': artwork.get('date_start', ''),
+                'date_end': artwork.get('date_end', ''),
                 'date_display': artwork.get('date_display', ''),
                 'medium_display': artwork.get('medium_display', ''),
                 'dimensions': artwork.get('dimensions', ''),
                 'on_view': artwork.get('on_view'),
                 'on_loan': artwork.get('on_loan'),
-                'style_title': artwork.get('style_title', ''),
+                'classification_title': artwork.get('classification_title', []),
                 'image_url': f"https://www.artic.edu/iiif/2/{artwork['image_id']}/full/843,/0/default.jpg" if artwork.get('image_id') else None
-            } for artwork in artworks]
+            } for artwork in artworks if int(artwork.get('date_start', 0)) >= date_range[0] and int(artwork.get('date_end', 0)) <= date_range[1]]
             
-            for artwork_detail in artworks_details:
-                save_artwork(artwork_detail)
-            
+           
             selected_artwork = random.choice(artworks_details) if artworks_details else None
         else:
             selected_artwork = None
@@ -205,7 +203,7 @@ def user_profile():
         flash(f"Error connecting to the Art Institute of Chicago API: {e}", "danger")
 
     # Render the profile page with the selected artwork details
-    return render_template('/users/profile.html', selected_artwork=selected_artwork, user=user)
+    return render_template('/users/profile.html', selected_artwork=selected_artwork, user=user, century = user_century)
 
 @app.route('/users/profile/edit', methods=["GET", "POST"])
 def edit_profile():

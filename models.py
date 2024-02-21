@@ -41,6 +41,7 @@ class User(db.Model):
             century_id=century_id
         )
         db.session.add(user)
+        db.session.commit()
         return user
 
     @classmethod
@@ -81,11 +82,11 @@ class Artwork(db.Model):
     dimensions = db.Column(db.String(255))
     on_view = db.Column(db.Boolean, default=False)
     on_loan = db.Column(db.Boolean, default=False)
-    style_title = db.Column(db.String, db.ForeignKey('styles.name'))
+    classification_title = db.Column(db.String, db.ForeignKey('classifications.classification_title'))
     image_id = db.Column(db.String(255))
     image_url = db.Column(db.Text, nullable = False)
     
-    styles = db.relationship('Style', backref='artworks', lazy=True)
+    classifications = db.relationship('Classification', backref='artworks', lazy=True)
 
     @property
     def artist_title(self):
@@ -97,9 +98,9 @@ class Artwork(db.Model):
         """If available, it returns the artist's biography"""
         return self.artist.artist_display
 
-class Style(db.Model):
-    __tablename__ = 'styles'
-    name = db.Column(db.String, primary_key=True)
+class Classification(db.Model):
+    __tablename__ = 'classifications'
+    classification_title = db.Column(db.String, primary_key=True)
     
 class Favorite(db.Model):
     __tablename__= 'favorites'
