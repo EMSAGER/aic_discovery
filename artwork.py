@@ -10,7 +10,7 @@ def save_artwork(artwork_detail):
         db.session.commit()
 
     # Create a new Artwork instance and associate it with the artist
-    artwork_detail = Artwork(
+    artwork = Artwork(
         title=artwork_detail['title'],
         artist_id=artist.id,  
         date_start=artwork_detail.get('date_start'),
@@ -25,9 +25,9 @@ def save_artwork(artwork_detail):
     )
 
     try:
-        db.session.add(new_artwork)
+        db.session.add(artwork)
         db.session.commit()
-        return new_artwork
+        return artwork
     except Exception as e:
         db.session.rollback()
         print(f"An error occurred: {e}")

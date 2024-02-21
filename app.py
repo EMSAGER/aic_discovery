@@ -168,7 +168,7 @@ def user_profile():
     date_range = century_dates.get(user_century)
     query_params = {
             'limit': 10,
-            'page' : 5,
+            'page' : 3,
             'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display, on_view, on_loan, style_title'
         }
     try:
@@ -179,24 +179,23 @@ def user_profile():
             artworks = res_data.get('data', [])
             date_range = [int(date_range[0]), int(date_range[1])]
             artworks_details = [{
-                    'title': artwork.get('title'),
-                    'artist_title': artwork.get('artist_title', 'Unknown Artist'),
-                    'artist_display': artwork.get('artist_display', ''),
-                    'date_start': artwork.get('date_start', ''),
-                    'date_end': artwork.get('date_end', ''),
-                    'date_display': artwork.get('date_display', ''),
-                    'medium_display': artwork.get('medium_display', ''),
-                    'dimensions': artwork.get('dimensions', ''),
-                    'on_view': artwork.get('on_view'),
-                    'on_loan': artwork.get('on_loan'),
-                    'classification_title': artwork.get('classification_title', []),
-                    'image_url': f"https://www.artic.edu/iiif/2/{artwork['image_id']}/full/843,/0/default.jpg" if artwork.get('image_id') else None
-                } for artwork in artworks if int(artwork.get('date_start', 0)) >= date_range[0] and int(artwork.get('date_end', 0)) <= date_range[1]]
-            
-            for artwork_detail in artworks_details:
-                    save_artwork(artwork_detail)
-            
+                'title': artwork.get('title'),
+                'artist_title': artwork.get('artist_title', 'Unknown Artist'),
+                'artist_display': artwork.get('artist_display', ''),
+                'date_start': artwork.get('date_start', ''),
+                'date_end': artwork.get('date_end', ''),
+                'date_display': artwork.get('date_display', ''),
+                'medium_display': artwork.get('medium_display', ''),
+                'dimensions': artwork.get('dimensions', ''),
+                'on_view': artwork.get('on_view'),
+                'on_loan': artwork.get('on_loan'),
+                'classification_title': artwork.get('classification_title', []),
+                'image_url': f"https://www.artic.edu/iiif/2/{artwork['image_id']}/full/843,/0/default.jpg" if artwork.get('image_id') else None
+            } for artwork in artworks if int(artwork.get('date_start', 0)) >= date_range[0] and int(artwork.get('date_end', 0)) <= date_range[1]]
             selected_artwork = random.choice(artworks_details) if artworks_details else None
+
+            # for artwork_detail in artworks_details:
+            #         save_artwork(artwork_detail)
         else:
             selected_artwork = None
             flash("Failed to fetch artworks from the API.", "danger")
