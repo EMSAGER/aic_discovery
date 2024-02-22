@@ -17,6 +17,7 @@ def save_artwork(artwork_detail):
 
 
     artwork = Artwork(
+        id = artwork_detail['id'],
         title=artwork_detail['title'],
         artist_id=artist.id,
         date_start=artwork_detail.get('date_start'),

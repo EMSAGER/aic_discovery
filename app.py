@@ -157,13 +157,14 @@ def user_profile():
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
-    
+    form = FavoriteForm()
     user = User.query.get_or_404(session['curr_user']) 
     user_century = Century.query.get(g.user.century_id).century_name
     century_dates ={
+        '18th Century': ('1700', '1799'),
         '19th Century': ('1800', '1899'),
         '20th Century': ('1900', '1999'),
-        '21st Century': ('2000', '2099'),
+        '21st Century': ('2000', '2099')
     }
     date_range = century_dates.get(user_century)
     query_params = {
@@ -180,6 +181,7 @@ def user_profile():
             date_range = [int(date_range[0]), int(date_range[1])]
             saved_artworks = []
             artworks_details = [{
+                'id' : artwork.get('id'),
                 'title': artwork.get('title'),
                 'artist_title': artwork.get('artist_title', 'Unknown Artist'),
                 'artist_display': artwork.get('artist_display', ''),
@@ -190,13 +192,9 @@ def user_profile():
                 'dimensions': artwork.get('dimensions', ''),
                 'on_view': artwork.get('on_view'),
                 'on_loan': artwork.get('on_loan'),
-                # 'classification_title': artwork.get('classification_title', []),
                 'image_url': f"https://www.artic.edu/iiif/2/{artwork['image_id']}/full/843,/0/default.jpg" if artwork.get('image_id') else None
             } for artwork in artworks if int(artwork.get('date_start', 0)) >= date_range[0] and int(artwork.get('date_end', 0)) <= date_range[1]]
-            # for artwork_detail in artworks_details:
-            #     saved_artwork = save_artwork(artwork_detail)
-            #     if saved_artwork:
-            #         saved_artworks.append(saved_artwork)
+          
             
             selected_artwork = random.choice(artworks_details) if artworks_details else None
             for artwork_detail in artworks_details:
@@ -214,7 +212,7 @@ def user_profile():
     # Render the profile page with the selected artwork details
     # for artwork_detail in artworks_details:
     #     save_artwork(artwork_detail)
-    return render_template('/users/profile.html', selected_artwork=selected_artwork, user=user, century = user_century)
+    return render_template('/users/profile.html', selected_artwork=selected_artwork, user=user, century = user_century, form=form)
 
 @app.route('/users/profile/edit', methods=["GET", "POST"])
 def edit_profile():
@@ -234,7 +232,7 @@ def edit_profile():
             user.century_id = form.century_id.data
             db.session.commit()
             flash("User Updated!", "success")
-            return redirect(f"/users/{user.id}")
+            return redirect(f"/users/profile")
         else:
             # If authentication fails, flash an error message
             flash("Incorrect password.", "danger")
@@ -242,8 +240,42 @@ def edit_profile():
   
     
     return render_template("users/edit.html", user=user, form=form)
-    
 
+##############################################################################
+# Art focused routes
+@app.route('/users/favorites/<int:artwork_id>', methods=["GET", "POST"])
+def favorite_artwork(artwork_id):
+    """."""
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+    
+    user = g.user.id
+    artwork = Artwork.query.filter_by(id=artwork_id).first()
+    if not artwork:
+        flash("Artwork not found.", "danger")
+        return redirect("/")
+    artist_id = artwork.artist_id
+    favorite = Favorite.query.filter_by(user_id=user, artwork_id=artwork_id, artist_id = artist_id).first()
+    if favorite:
+        #removes the favorite tag -- does not dislike
+        db.session.delete(favorite)
+        flash("Artwork removed from favorites.", "success")
+    else:
+        new_favorite = Favorite(user_id=user, artwork_id=artwork_id, artist_id=artist_id)
+        db.session.add(new_favorite)
+        flash("Artwork added to favorites.", "success")
+
+    db.session.commit()    
+    return redirect('/users/favorites')
+    
+@app.route('/users/favorites')
+def all_favorites():
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+    favorites = Favorite.query.all()
+    return render_template('/users/favorites.html', favorites=favorites)
 ##############################################################################
 # Homepage
 

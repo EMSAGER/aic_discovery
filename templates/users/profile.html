@@ -25,10 +25,11 @@
         </div>
         <!-- Column for buttons -->
         <div class="col-md-3 d-flex flex-column justify-content-start">
-            <!-- Like Button -->
-            <a href="/users/like" class="btn btn-success mb-2"><i class="fa-regular fa-thumbs-up"></i> Like</a>
-            <!-- Dislike Button -->
-            <a href="/users/dislike" class="btn btn-danger"><i class="fa-regular fa-thumbs-down"></i> Dislike</a>
+            <form action="/users/favorites/{{ selected_artwork.id }}" method="post">
+                {{ form.csrf_token }}
+                <button type="submit" class="btn btn-success mb-2"><i class="fa-regular fa-thumbs-up"></i> Like</button>
+            </form>
+            <a href="/users/add_dislike" class="btn btn-danger"><i class="fa-regular fa-thumbs-down"></i> Dislike</a>
         </div>
     </div>
 </div>

@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{%block content%}
+<h1>Favorites</h1>
+
+{% for artwork in favorites %}
+    {{artwork.title}}
+    {{artwork.artist_id}}
+{% endfor %}
+{%endblock%}
