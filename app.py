@@ -169,7 +169,7 @@ def user_profile():
     query_params = {
             'limit': 10,
             'page' : 3,
-            'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display, on_view, on_loan, style_title'
+            'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display, on_view, on_loan'
         }
     try:
         response = requests.get(API_URL, headers=HEADER, params=query_params, timeout=20)
@@ -190,7 +190,7 @@ def user_profile():
                 'dimensions': artwork.get('dimensions', ''),
                 'on_view': artwork.get('on_view'),
                 'on_loan': artwork.get('on_loan'),
-                'classification_title': artwork.get('classification_title', []),
+                # 'classification_title': artwork.get('classification_title', []),
                 'image_url': f"https://www.artic.edu/iiif/2/{artwork['image_id']}/full/843,/0/default.jpg" if artwork.get('image_id') else None
             } for artwork in artworks if int(artwork.get('date_start', 0)) >= date_range[0] and int(artwork.get('date_end', 0)) <= date_range[1]]
             # for artwork_detail in artworks_details:

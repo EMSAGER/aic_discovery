@@ -25,7 +25,7 @@ def save_artwork(artwork_detail):
         dimensions=artwork_detail['dimensions'],
         on_view=artwork_detail['on_view'],
         on_loan=artwork_detail['on_loan'],
-        classification_title=artwork_detail['classification_title'],
+        # classification_title=artwork_detail['classification_title'],
         image_id=artwork_detail.get('image_id'),
         image_url=artwork_detail['image_url']
     )
