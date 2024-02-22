@@ -1,18 +1,24 @@
-from models import db, User, Artwork, Artist
+from models import db, Artwork, Artist
+from flask import flash
 
 def save_artwork(artwork_detail):
-    # Check if the artist exists
+    
     artist = Artist.query.filter_by(artist_title=artwork_detail['artist_title']).first()
     if not artist:
-        # If the artist doesn't exist, create a new one without specifying artworks
+        
         artist = Artist(artist_title=artwork_detail['artist_title'])
         db.session.add(artist)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash(f"An error occurred while saving the artist: {e}", "danger")
+            return None
 
-    # Create a new Artwork instance and associate it with the artist
+
     artwork = Artwork(
         title=artwork_detail['title'],
-        artist_id=artist.id,  
+        artist_id=artist.id,
         date_start=artwork_detail.get('date_start'),
         date_end=artwork_detail.get('date_end'),
         medium_display=artwork_detail['medium_display'],
@@ -30,5 +36,5 @@ def save_artwork(artwork_detail):
         return artwork
     except Exception as e:
         db.session.rollback()
-        print(f"An error occurred: {e}")
+        flash(f"An error occurred while saving the artwork: {e}", "danger")
         return None
