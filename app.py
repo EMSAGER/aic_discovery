@@ -64,7 +64,7 @@ def do_logout():
 
 def initialize_centuries():
     if not Century.query.first():
-        centuries = ['19th Century', '20th Century', '21st Century']
+        centuries = ['18th Century', '19th Century', '20th Century', '21st Century']
         for name in centuries:
             if not Century.query.filter_by(century_name=name).first():
                 century = Century(century_name=name)
@@ -166,37 +166,46 @@ def user_profile():
         '20th Century': ('1900', '1999'),
         '21st Century': ('2000', '2099')
     }
-    date_range = century_dates.get(user_century)
+    date_range = century_dates.get(user_century, (None, None))
+
+    # Fetch artworks that are neither in Favorites nor NotFavorites for the user
+    favorite_artwork_ids = [fav.artwork_id for fav in Favorite.query.filter_by(user_id=user.id).all()]
+    not_favorite_artwork_ids = [not_fav.artwork_id for not_fav in NotFavorite.query.filter_by(user_id=user.id).all()]
+    
     query_params = {
             'limit': 10,
             'page' : 4,
             'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display, on_view, on_loan'
         }
     try:
-        response = requests.get(API_URL, headers=HEADER, params=query_params, timeout=20)
+        response = requests.get(API_URL, headers=HEADER, params=query_params)
 
         if response.status_code == 200:
             res_data = response.json()
             artworks = res_data.get('data', [])
             date_range = [int(date_range[0]), int(date_range[1])]
             saved_artworks = []
-            artworks_details = [{
-                'id' : artwork.get('id'),
-                'title': artwork.get('title'),
-                'artist_title': artwork.get('artist_title', 'Unknown Artist'),
-                'artist_display': artwork.get('artist_display', ''),
-                'date_start': artwork.get('date_start', ''),
-                'date_end': artwork.get('date_end', ''),
-                'date_display': artwork.get('date_display', ''),
-                'medium_display': artwork.get('medium_display', ''),
-                'dimensions': artwork.get('dimensions', ''),
-                'on_view': artwork.get('on_view'),
-                'on_loan': artwork.get('on_loan'),
-                'image_id': artwork.get('image_id'),
-                'image_url': f"https://www.artic.edu/iiif/2/{artwork['image_id']}/full/843,/0/default.jpg" if artwork.get('image_id') else None
-            } for artwork in artworks if int(artwork.get('date_start', 0)) >= date_range[0] and int(artwork.get('date_end', 0)) <= date_range[1]]
-          
-            
+            artworks_details = []
+            for artwork in artworks:
+                if int(artwork.get('date_start', 0)) >= date_range[0] and int(artwork.get('date_end', 0)) <= date_range[1]:
+                    if artwork['id'] not in favorite_artwork_ids and artwork['id'] not in not_favorite_artwork_ids:
+                        artworks_details.append({
+                            'id' : artwork.get('id'),
+                            'title': artwork.get('title'),
+                            'artist_title': artwork.get('artist_title', 'Unknown Artist'),
+                            'artist_display': artwork.get('artist_display', ''),
+                            'date_start': artwork.get('date_start', ''),
+                            'date_end': artwork.get('date_end', ''),
+                            'date_display': artwork.get('date_display', ''),
+                            'medium_display': artwork.get('medium_display', ''),
+                            'dimensions': artwork.get('dimensions', ''),
+                            'on_view': artwork.get('on_view'),
+                            'on_loan': artwork.get('on_loan'),
+                            'image_id': artwork.get('image_id'),
+                            'image_url': f"https://www.artic.edu/iiif/2/{artwork['image_id']}/full/843,/0/default.jpg" if artwork.get('image_id') else None
+                        }) 
+                
+                
             selected_artwork = random.choice(artworks_details) if artworks_details else None
             for artwork_detail in artworks_details:
                 saved_artwork = save_artwork(artwork_detail)
