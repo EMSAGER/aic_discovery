@@ -27,9 +27,10 @@
         <div class="col-md-3 d-flex flex-column justify-content-start">
             <form action="/users/favorites/{{ selected_artwork.id }}" method="post">
                 {{ form.csrf_token }}
-                <button type="submit" class="btn btn-success mb-2"><i class="fa-regular fa-thumbs-up"></i> Like</button>
+                <button type="submit" class="btn btn-success"><i class="fa-regular fa-thumbs-up"></i> Like</button>
+                <a href="/users/not_favorites/{{selected_artwork.id}}" class="btn btn-danger"><i class="fa-regular fa-thumbs-down"></i> Dislike</a>
             </form>
-            <a href="/users/add_dislike" class="btn btn-danger"><i class="fa-regular fa-thumbs-down"></i> Dislike</a>
+            
         </div>
     </div>
 </div>

@@ -111,6 +111,12 @@ class Favorite(db.Model):
     artist_id = db.Column(db.Integer, db.ForeignKey('artists.id'), nullable=False)
     artwork_id = db.Column(db.Integer, db.ForeignKey('artworks.id'), nullable=False)
 
+class NotFavorite(db.Model):
+    __tablename__ = 'not_favorites'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    artist_id = db.Column(db.Integer, db.ForeignKey('artists.id'), nullable=False)
+    artwork_id = db.Column(db.Integer, db.ForeignKey('artworks.id'), nullable=False)
 
 class Century(db.Model):
     __tablename__= 'centuries'

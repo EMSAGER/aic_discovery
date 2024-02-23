@@ -2,7 +2,7 @@ from flask import Flask, render_template, redirect, session, flash, g, jsonify
 import requests
 import random
 from flask_debugtoolbar import DebugToolbarExtension
-from models import connect_db, db, User, Favorite, Artist, Artwork, Classification, Century
+from models import connect_db, db, User, Favorite, Artwork, Century, NotFavorite
 from forms import UserEditForm, UserForm, LoginForm, FavoriteForm
 from sqlalchemy.exc import IntegrityError
 from artwork import save_artwork
@@ -169,7 +169,7 @@ def user_profile():
     date_range = century_dates.get(user_century)
     query_params = {
             'limit': 10,
-            'page' : 3,
+            'page' : 4,
             'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display, on_view, on_loan'
         }
     try:
@@ -246,7 +246,9 @@ def edit_profile():
 # Art focused routes
 @app.route('/users/favorites/<int:artwork_id>', methods=["GET", "POST"])
 def favorite_artwork(artwork_id):
-    """."""
+    """Favorites an image. It checks to make sure the image isn't liked beforehand.
+    If not, it is added to the favorites table & redirected to the page"""
+
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/users/profile")
@@ -270,7 +272,7 @@ def favorite_artwork(artwork_id):
         db.session.delete(favorite)
         flash("Artwork removed from favorites.", "success")
     else:
-        new_favorite = Favorite(user_id=user, artwork_id=artwork_id, artist_id=artist_id, image_id=image_id)
+        new_favorite = Favorite(user_id=user, artwork_id=artwork_id, artist_id=artist_id)
         db.session.add(new_favorite)
         flash("Artwork added to favorites.", "success")
 
@@ -283,7 +285,6 @@ def all_favorites():
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
-    user = g.user
     # Retrieve all favorites for the current user and join with Artwork to get details
     favorites = (db.session.query(Favorite, Artwork)
                  .join(Artwork)
@@ -298,10 +299,45 @@ def all_favorites():
             favorite_artworks.append({'id': fav.Artwork.id,
                           'title': fav.Artwork.title,
                           'image_id': fav.Artwork.image_id,
+                          'artist_title': fav.Artwork.artist_title,
+                          'date_start': fav.Artwork.date_start,
+                          'date_end': fav.Artwork.date_end,
                           'image_url': f"https://www.artic.edu/iiif/2/{fav.Artwork.image_id}/full/843,/0/default.jpg"})
     
-    return render_template('/users/favorites.html', favorites=favorite_artworks)
+    return render_template('/favorites/favorites.html', favorites=favorite_artworks)
 
+@app.route('/users/not_favorites/<int:artwork_id>', methods=["GET", "POST"])
+def not_favorite_image(artwork_id):
+    """Puts the unliked image into it's own category so that a user won't see it again"""
+    if not g.user:
+            flash("Access unauthorized.", "danger")
+            return redirect("/users/profile")
+        
+    user = g.user.id
+    artwork = Artwork.query.get(artwork_id)
+    if not artwork:
+        flash("Artwork not found.", "danger")
+        return redirect("/users/profile")
+    
+    existing_not_favorite = NotFavorite.query.join(Artwork, NotFavorite.artwork_id == Artwork.id).filter(Artwork.image_id == artwork.image_id).first()
+
+    if existing_not_favorite:
+        flash("This artwork is already in your favorites.", "warning")
+        return redirect("/users/profile")
+    
+    artist_id = artwork.artist_id
+    not_favorite = NotFavorite.query.filter_by(user_id=user, artwork_id=artwork_id, artist_id = artist_id).first()
+    if not_favorite:
+        #removes the favorite tag -- does not dislike
+        db.session.delete(not_favorite)
+        flash("Dislike removed.", "success")
+    else:
+        new_not_favorite = NotFavorite(user_id=user, artwork_id=artwork_id, artist_id=artist_id)
+        db.session.add(new_not_favorite)
+        flash("Artwork disliked.", "success")
+
+    db.session.commit()    
+    return redirect('/users/profile')
 ##############################################################################
 # Homepage
 

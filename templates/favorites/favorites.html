@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1 class="display-2 text-center">Favorites</h1>
+
+<div class="favorites-list container">
+   
+    <div class="favorite-artwork">
+        <div class="row">
+        {% for artwork in favorites %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <img class="card-img-top img-fluid img-fixed-height" src="{{ artwork.image_url }}" alt="{{ artwork.title }}">
+                    <div class="card-body">
+                        <h4 class="card-title text-center">{{ artwork.title }}</h4>
+                        <p class="card-text text-center">{{ artwork.date_start }} - {{artwork.date_end}}</p>
+                        <p class="card-text text-center"></p>
+                        <p class="card-text text-center">{{ artwork.artist_title }}</p>
+                        <div class="d-flex justify-content-around">
+                            <form action="/users/favorites/{{ artwork.id }}" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-thumbs-up"></i> Like</button>
+                            </form>
+                            <a href="/users/add_dislike" class="btn btn-danger btn-sm d-inline"><i class="fa-regular fa-thumbs-down"></i> Dislike</a>
+                        </div>
+                        </div>
+                    </div>
+            
+            </div>
+            {% if loop.index %3 == 0 %}
+                </div><div class="row">
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

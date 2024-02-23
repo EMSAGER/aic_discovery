@@ -10,3 +10,8 @@
 .navbar * {
     text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.7);
 }
+
+.img-fixed-height {
+    height: 400px; 
+    object-fit: cover;
+}
