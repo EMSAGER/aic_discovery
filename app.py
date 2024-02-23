@@ -192,6 +192,7 @@ def user_profile():
                 'dimensions': artwork.get('dimensions', ''),
                 'on_view': artwork.get('on_view'),
                 'on_loan': artwork.get('on_loan'),
+                'image_id': artwork.get('image_id'),
                 'image_url': f"https://www.artic.edu/iiif/2/{artwork['image_id']}/full/843,/0/default.jpg" if artwork.get('image_id') else None
             } for artwork in artworks if int(artwork.get('date_start', 0)) >= date_range[0] and int(artwork.get('date_end', 0)) <= date_range[1]]
           
@@ -248,13 +249,20 @@ def favorite_artwork(artwork_id):
     """."""
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/")
+        return redirect("/users/profile")
     
     user = g.user.id
-    artwork = Artwork.query.filter_by(id=artwork_id).first()
+    artwork = Artwork.query.get(artwork_id)
     if not artwork:
         flash("Artwork not found.", "danger")
-        return redirect("/")
+        return redirect("/users/profile")
+    
+    existing_favorite = Favorite.query.join(Artwork, Favorite.artwork_id == Artwork.id).filter(Artwork.image_id == artwork.image_id).first()
+
+    if existing_favorite:
+        flash("This artwork is already in your favorites.", "warning")
+        return redirect("/users/profile")
+    
     artist_id = artwork.artist_id
     favorite = Favorite.query.filter_by(user_id=user, artwork_id=artwork_id, artist_id = artist_id).first()
     if favorite:
@@ -262,7 +270,7 @@ def favorite_artwork(artwork_id):
         db.session.delete(favorite)
         flash("Artwork removed from favorites.", "success")
     else:
-        new_favorite = Favorite(user_id=user, artwork_id=artwork_id, artist_id=artist_id)
+        new_favorite = Favorite(user_id=user, artwork_id=artwork_id, artist_id=artist_id, image_id=image_id)
         db.session.add(new_favorite)
         flash("Artwork added to favorites.", "success")
 
@@ -271,14 +279,34 @@ def favorite_artwork(artwork_id):
     
 @app.route('/users/favorites')
 def all_favorites():
+    """Retrieves all of the current user's favorited works"""
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
-    favorites = Favorite.query.all()
-    return render_template('/users/favorites.html', favorites=favorites)
+    user = g.user
+    # Retrieve all favorites for the current user and join with Artwork to get details
+    favorites = (db.session.query(Favorite, Artwork)
+                 .join(Artwork)
+                 .filter(Favorite.artwork_id == Artwork.id)
+                 .all())
+    
+    seen = set()
+    favorite_artworks = []
+    for fav in favorites:
+        if fav.Artwork.image_id not in seen:
+            seen.add(fav.Artwork.image_id)
+            favorite_artworks.append({'id': fav.Artwork.id,
+                          'title': fav.Artwork.title,
+                          'image_id': fav.Artwork.image_id,
+                          'image_url': f"https://www.artic.edu/iiif/2/{fav.Artwork.image_id}/full/843,/0/default.jpg"})
+    
+    return render_template('/users/favorites.html', favorites=favorite_artworks)
+
 ##############################################################################
 # Homepage
 
 @app.route('/')
 def home_page():
     return render_template('index.html')
+
+

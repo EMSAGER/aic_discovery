@@ -83,7 +83,7 @@ class Artwork(db.Model):
     on_view = db.Column(db.Boolean, default=False)
     on_loan = db.Column(db.Boolean, default=False)
     classification_title = db.Column(db.String, db.ForeignKey('classifications.classification_title'), nullable=True)
-    image_id = db.Column(db.String(255))
+    image_id = db.Column(db.String(255), unique=True, nullable=True) 
     image_url = db.Column(db.Text, nullable = False)
     
     classifications = db.relationship('Classification', backref='artworks', lazy=True)
@@ -97,6 +97,8 @@ class Artwork(db.Model):
     def artist_display(self):
         """If available, it returns the artist's biography"""
         return self.artist.artist_display
+    
+    
 
 class Classification(db.Model):
     __tablename__ = 'classifications'
@@ -108,6 +110,7 @@ class Favorite(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     artist_id = db.Column(db.Integer, db.ForeignKey('artists.id'), nullable=False)
     artwork_id = db.Column(db.Integer, db.ForeignKey('artworks.id'), nullable=False)
+
 
 class Century(db.Model):
     __tablename__= 'centuries'
