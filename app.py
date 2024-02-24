@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, session, flash, g, jsonify
+from flask import Flask, render_template, redirect, session, flash, g
 import requests
 import random
 from flask_debugtoolbar import DebugToolbarExtension
@@ -64,7 +64,7 @@ def do_logout():
 
 def initialize_centuries():
     if not Century.query.first():
-        centuries = ['18th Century', '19th Century', '20th Century', '21st Century']
+        centuries = ['18th Century', '19th Century', '20th Century']
         for name in centuries:
             if not Century.query.filter_by(century_name=name).first():
                 century = Century(century_name=name)
@@ -164,7 +164,6 @@ def user_profile():
         '18th Century': ('1700', '1799'),
         '19th Century': ('1800', '1899'),
         '20th Century': ('1900', '1999'),
-        '21st Century': ('2000', '2099')
     }
     date_range = century_dates.get(user_century, (None, None))
 
@@ -174,7 +173,7 @@ def user_profile():
     
     query_params = {
             'limit': 10,
-            'page' : 4,
+            'page' : 10,
             'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display, on_view, on_loan'
         }
     try:
@@ -218,10 +217,7 @@ def user_profile():
     except requests.RequestException as e:
         selected_artwork = None
         flash(f"Error connecting to the Art Institute of Chicago API: {e}", "danger")
-
-    # Render the profile page with the selected artwork details
-    # for artwork_detail in artworks_details:
-    #     save_artwork(artwork_detail)
+    
     return render_template('/users/profile.html', selected_artwork=selected_artwork, user=user, century = user_century, form=form)
 
 @app.route('/users/profile/edit', methods=["GET", "POST"])
@@ -286,7 +282,7 @@ def favorite_artwork(artwork_id):
         flash("Artwork added to favorites.", "success")
 
     db.session.commit()    
-    return redirect('/users/favorites')
+    return redirect('/users/profile')
     
 @app.route('/users/favorites')
 def all_favorites():
@@ -347,6 +343,84 @@ def not_favorite_image(artwork_id):
 
     db.session.commit()    
     return redirect('/users/profile')
+
+##############################################################################
+# Surprise Me Routes
+"""the purpose of these routes is to 
+show users artwork from the centuries they didn't chose."""
+@app.route('/users/surprise')
+def suprise_home():
+    """Route that shows the suprise page and showcases artwork from unchosen centuries"""
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+    form = FavoriteForm()
+    user = User.query.get_or_404(session['curr_user']) 
+    user_century = Century.query.get(user.century_id).century_name
+
+    unchosen_centuries = Century.query.filter(Century.century_name != user_century).all()
+    if not unchosen_centuries:
+        flash("No unchosen centuries found.", "danger")
+        return redirect("/users/profile")
+
+    random_century = random.choice(unchosen_centuries)
+    century_name = random_century.century_name
+
+    century_dates = {
+        '18th Century': ('1700', '1799'),
+        '19th Century': ('1800', '1899'),
+        '20th Century': ('1900', '1999'),
+    }
+
+    date_range = century_dates.get(century_name)
+    if not date_range:
+        flash("Could not find date range for the selected century.", "danger")
+        return redirect("/users/profile")
+
+    favorite_artwork_ids = [fav.artwork_id for fav in Favorite.query.filter_by(user_id=user.id).all()]
+    not_favorite_artwork_ids = [not_fav.artwork_id for not_fav in NotFavorite.query.filter_by(user_id=user.id).all()]
+
+    query_params = {
+        'limit': 10,
+        'page': 4,
+        'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display, on_view, on_loan'
+    }
+
+    artworks_details = []  # Initialize artworks_details as an empty list
+
+    try:
+        response = requests.get(API_URL, headers=HEADER, params=query_params)
+        if response.status_code == 200:
+            res_data = response.json()
+            artworks = res_data.get('data', [])
+            date_range_int = [int(date_range[0]), int(date_range[1])]
+            for artwork in artworks:
+                if int(artwork.get('date_start', 0)) >= date_range_int[0] and int(artwork.get('date_end', 0)) <= date_range_int[1]:
+                    if artwork['id'] not in favorite_artwork_ids and artwork['id'] not in not_favorite_artwork_ids:
+                        artworks_details.append({
+                            'id': artwork.get('id'),
+                            'title': artwork.get('title'),
+                            'artist_title': artwork.get('artist_title', 'Unknown Artist'),
+                            'artist_display': artwork.get('artist_display', ''),
+                            'date_start': artwork.get('date_start', ''),
+                            'date_end': artwork.get('date_end', ''),
+                            'date_display': artwork.get('date_display', ''),
+                            'medium_display': artwork.get('medium_display', ''),
+                            'dimensions': artwork.get('dimensions', ''),
+                            'on_view': artwork.get('on_view'),
+                            'on_loan': artwork.get('on_loan'),
+                            'image_id': artwork.get('image_id'),
+                            'image_url': f"https://www.artic.edu/iiif/2/{artwork['image_id']}/full/843,/0/default.jpg" if artwork.get('image_id') else None
+                        })
+        else:
+            flash("Failed to fetch artworks from the API.", "danger")
+    except requests.RequestException as e:
+        flash(f"Error connecting to the Art Institute of Chicago API: {e}", "danger")
+
+    # Choose a random artwork to display, or none if no suitable artwork was found
+    artwork_to_display = random.choice(artworks_details) if artworks_details else None
+
+    return render_template('/artwork/surprise.html', artwork=artwork_to_display, user=user, form=form, date_range=date_range)
 ##############################################################################
 # Homepage
 

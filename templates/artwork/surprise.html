@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block body_class %}profile{% endblock %}
+
+{% block content %}
+
+<h2>Artwork from {{date_range}}</h2>
+<p>The purpose of this section is to introduce you to artwork from other centuries.</p>
+<div class="container mt-5">
+    <div class="row align-items-start">
+        <!-- Sidebar with Artwork Details -->
+      
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ artwork.title }}</h5>
+                    <p class="card-text">Artist: {{ artwork.artist_title }}</p>
+                    <p class="card-text">Date: {{ artwork.date_display }}</p>
+                    <p class="card-text">Medium: {{ artwork.medium_display }}</p>
+                    <p class="card-text">Dimensions: {{ artwork.dimensions }}</p>
+                    <p class="card-text">Biography: {{ artwork.artist_display }}</p>
+
+                </div>
+            </div>
+        </div>
+        <!-- Artwork Image -->
+        <div class="col-md-6">
+            <img src="{{ artwork.image_url }}" class="img-fluid" alt="Artwork image">
+        </div>
+        <!-- Column for buttons -->
+        <div class="col-md-3 d-flex flex-column justify-content-start">
+            <form action="/users/favorites/{{ artwork.id }}" method="post">
+                {{ form.csrf_token }}
+                <button type="submit" class="btn btn-success"><i class="fa-regular fa-thumbs-up"></i> Like</button>
+                <a href="/users/not_favorites/{{artwork.id}}" class="btn btn-danger"><i class="fa-regular fa-thumbs-down"></i> Dislike</a>
+            </form>
+        </div>
+
+    </div>
+</div>
+
+
+{% endblock %}
+
+

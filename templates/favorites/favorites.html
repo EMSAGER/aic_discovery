@@ -19,7 +19,7 @@
                             <form action="/users/favorites/{{ artwork.id }}" method="post" class="d-inline">
                                 <button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-thumbs-up"></i> Like</button>
                             </form>
-                            <a href="/users/add_dislike" class="btn btn-danger btn-sm d-inline"><i class="fa-regular fa-thumbs-down"></i> Dislike</a>
+                            <a href="/users/not_favorites/{{artwork.id}}" class="btn btn-danger btn-sm d-inline"><i class="fa-regular fa-thumbs-down"></i> Dislike</a>
                         </div>
                         </div>
                     </div>

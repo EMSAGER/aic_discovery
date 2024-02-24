@@ -4,6 +4,7 @@
 
 {% block content %}
 <div class="container mt-5">
+    {% if selected_artwork %}
     <div class="row align-items-start">
         <!-- Sidebar with Artwork Details -->
         <div class="col-md-3">
@@ -30,12 +31,12 @@
                 <button type="submit" class="btn btn-success"><i class="fa-regular fa-thumbs-up"></i> Like</button>
                 <a href="/users/not_favorites/{{selected_artwork.id}}" class="btn btn-danger"><i class="fa-regular fa-thumbs-down"></i> Dislike</a>
             </form>
-            
         </div>
     </div>
+    {% else %}
+    <div class="alert alert-info" role="alert">
+        No selected artwork available at the moment. Please try again later or explore other artworks.
+    </div>
+    {% endif %}
 </div>
-
-
 {% endblock %}
-
-
