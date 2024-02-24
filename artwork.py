@@ -1,5 +1,6 @@
 from models import db, Artwork, Artist
 from flask import flash
+from sqlalchemy.exc import IntegrityError
 
 def save_artwork(artwork_detail):
     
@@ -47,7 +48,11 @@ def save_artwork(artwork_detail):
     try:
         db.session.commit()
         return artwork
+    except IntegrityError:
+        db.session.rollback()
+        flash("An error occurred: Artwork with this ID already exists.", "danger")
+        return None
     except Exception as e:
         db.session.rollback()
-        flash(f"An error occurred while saving the artwork: {e}", "danger")
+        flash(f"An unexpected error occurred while saving the artwork: {e}", "danger")
         return None

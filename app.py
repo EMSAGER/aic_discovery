@@ -172,7 +172,7 @@ def user_profile():
     not_favorite_artwork_ids = [not_fav.artwork_id for not_fav in NotFavorite.query.filter_by(user_id=user.id).all()]
     
     query_params = {
-            'limit': 10,
+            'limit': 100,
             'page' : 10,
             'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display, on_view, on_loan'
         }
