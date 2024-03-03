@@ -1,17 +1,13 @@
-from flask import Flask, render_template, redirect, session, flash, g
-import requests
-import random
+from flask import Flask, render_template, redirect, session, flash, g, jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 from models import connect_db, db, User, Favorite, Artwork, Century, NotFavorite
 from forms import UserEditForm, UserForm, LoginForm, FavoriteForm
 from sqlalchemy.exc import IntegrityError
-from artwork import save_artwork
+from api_requests import APIRequests
+from favoriting_Art import ArtworkFavorites
+import random
 import os
 from dotenv import load_dotenv
-from flask_migrate import Migrate
-
-# Assuming 'app' is your Flask app and 'db' is the SQLAlchemy object
-
 
 
 load_dotenv()
@@ -29,10 +25,10 @@ app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
 
-migrate = Migrate(app, db)
 connect_db(app)
 toolbar = DebugToolbarExtension(app)
 
+favorite = favoriting_Art.ArtworkFavorites
 ##############################################################################
 # User signup/login/logout
 
@@ -41,11 +37,11 @@ toolbar = DebugToolbarExtension(app)
 def add_user_to_g():
     """If we're logged in, add curr user to Flask global."""
 
-    if 'curr_user' in session:
-        g.user = User.query.get(session['curr_user'])
-
+    if CURR_USER_KEY in session:
+        g.user = User.query.get(session[CURR_USER_KEY])
     else:
         g.user = None
+
 def initialize_app():
     initialize_centuries()
 
@@ -53,14 +49,14 @@ def initialize_app():
 def do_login(user):
     """Log in user."""
 
-    session['curr_user'] = user.id
+    session[CURR_USER_KEY] = user.id
 
 
 def do_logout():
     """Logout user."""
 
-    if 'curr_user' in session:
-        del session['curr_user']
+    if CURR_USER_KEY in session:
+        del session[CURR_USER_KEY]
 
 def initialize_centuries():
     if not Century.query.first():
@@ -109,7 +105,7 @@ def signup():
             db.session.add(user)
             db.session.commit()
             do_login(user)
-            flash("User successfully registered.", 'success')
+            # flash("User successfully registered.", 'success')
             return redirect('/users/profile') 
         
         except IntegrityError:
@@ -130,7 +126,7 @@ def login():
 
         if user:
             do_login(user)
-            flash(f"Hello, {user.full_name}!", "success")
+            # flash(f"Hello, {user.full_name}!", "success")
             return redirect("/users/profile")
 
         flash("Invalid credentials.", 'danger')
@@ -157,66 +153,14 @@ def user_profile():
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
-    form = FavoriteForm()
-    user = User.query.get_or_404(session['curr_user']) 
-    user_century = Century.query.get(g.user.century_id).century_name
-    century_dates ={
-        '18th Century': ('1700', '1799'),
-        '19th Century': ('1800', '1899'),
-        '20th Century': ('1900', '1999'),
-    }
-    date_range = century_dates.get(user_century, (None, None))
-
-    # Fetch artworks that are neither in Favorites nor NotFavorites for the user
-    favorite_artwork_ids = [fav.artwork_id for fav in Favorite.query.filter_by(user_id=user.id).all()]
-    not_favorite_artwork_ids = [not_fav.artwork_id for not_fav in NotFavorite.query.filter_by(user_id=user.id).all()]
     
-    query_params = {
-            'limit': 100,
-            'page' : 10,
-            'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display, on_view, on_loan'
-        }
-    try:
-        response = requests.get(API_URL, headers=HEADER, params=query_params)
+    form = FavoriteForm()
+    user = g.user
+    user_century = Century.query.get(user.century_id).century_name
 
-        if response.status_code == 200:
-            res_data = response.json()
-            artworks = res_data.get('data', [])
-            date_range = [int(date_range[0]), int(date_range[1])]
-            saved_artworks = []
-            artworks_details = []
-            for artwork in artworks:
-                if int(artwork.get('date_start', 0)) >= date_range[0] and int(artwork.get('date_end', 0)) <= date_range[1]:
-                    if artwork['id'] not in favorite_artwork_ids and artwork['id'] not in not_favorite_artwork_ids:
-                        artworks_details.append({
-                            'id' : artwork.get('id'),
-                            'title': artwork.get('title'),
-                            'artist_title': artwork.get('artist_title', 'Unknown Artist'),
-                            'artist_display': artwork.get('artist_display', ''),
-                            'date_start': artwork.get('date_start', ''),
-                            'date_end': artwork.get('date_end', ''),
-                            'date_display': artwork.get('date_display', ''),
-                            'medium_display': artwork.get('medium_display', ''),
-                            'dimensions': artwork.get('dimensions', ''),
-                            'on_view': artwork.get('on_view'),
-                            'on_loan': artwork.get('on_loan'),
-                            'image_id': artwork.get('image_id'),
-                            'image_url': f"https://www.artic.edu/iiif/2/{artwork['image_id']}/full/843,/0/default.jpg" if artwork.get('image_id') else None
-                        }) 
-                
-                
-            selected_artwork = random.choice(artworks_details) if artworks_details else None
-            for artwork_detail in artworks_details:
-                saved_artwork = save_artwork(artwork_detail)
-                saved_artworks.append(saved_artwork)
+    saved_artworks = APIRequests.get_artworks(user)
 
-
-        else:
-            selected_artwork = None
-            flash("Failed to fetch artworks from the API.", "danger")
-    except requests.RequestException as e:
-        selected_artwork = None
-        flash(f"Error connecting to the Art Institute of Chicago API: {e}", "danger")
+    selected_artwork = random.choice(saved_artworks) if saved_artworks else None
     
     return render_template('/users/profile.html', selected_artwork=selected_artwork, user=user, century = user_century, form=form)
 
@@ -227,7 +171,7 @@ def edit_profile():
         flash("Access unauthorized.", "danger")
         return redirect("/")
     
-    user = User.query.get_or_404(session['curr_user']) 
+    user = g.user
     form = UserEditForm(obj=user)
     form.century_id.choices = [(c.id, c.century_name) for c in Century.query.order_by('century_name')]
     if form.validate_on_submit():
@@ -237,7 +181,7 @@ def edit_profile():
             user.email = form.email.data
             user.century_id = form.century_id.data
             db.session.commit()
-            flash("User Updated!", "success")
+            # flash("User Updated!", "success")
             return redirect(f"/users/profile")
         else:
             # If authentication fails, flash an error message
@@ -256,33 +200,35 @@ def favorite_artwork(artwork_id):
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/users/profile")
+        return redirect("/")
     
-    user = g.user.id
-    artwork = Artwork.query.get(artwork_id)
-    if not artwork:
-        flash("Artwork not found.", "danger")
-        return redirect("/users/profile")
-    
-    existing_favorite = Favorite.query.join(Artwork, Favorite.artwork_id == Artwork.id).filter(Artwork.image_id == artwork.image_id).first()
+    user = g.user
 
-    if existing_favorite:
-        flash("This artwork is already in your favorites.", "warning")
-        return redirect("/users/profile")
+    result, status = ArtworkFavorites
+    # artwork = Artwork.query.get(artwork_id)
+    # if not artwork:
+    #     flash("Artwork not found.", "danger")
+    #     return redirect("/users/profile")
     
-    artist_id = artwork.artist_id
-    favorite = Favorite.query.filter_by(user_id=user, artwork_id=artwork_id, artist_id = artist_id).first()
-    if favorite:
-        #removes the favorite tag -- does not dislike
-        db.session.delete(favorite)
-        flash("Artwork removed from favorites.", "success")
-    else:
-        new_favorite = Favorite(user_id=user, artwork_id=artwork_id, artist_id=artist_id)
-        db.session.add(new_favorite)
-        flash("Artwork added to favorites.", "success")
+    # existing_favorite = Favorite.query.join(Artwork, Favorite.artwork_id == Artwork.id).filter(Artwork.image_id == artwork.image_id).first()
 
-    db.session.commit()    
-    return redirect('/users/profile')
+    # if existing_favorite:
+    #     flash("This artwork is already in your favorites.", "warning")
+    #     return redirect("/users/profile")
+    
+    # artist_id = artwork.artist_id
+    # favorite = Favorite.query.filter_by(user_id=user, artwork_id=artwork_id, artist_id = artist_id).first()
+    # if favorite:
+    #     #removes the favorite tag -- does not dislike
+    #     db.session.delete(favorite)
+    #     flash("Artwork removed from favorites.", "warning")
+    # else:
+    #     new_favorite = Favorite(user_id=user, artwork_id=artwork_id, artist_id=artist_id)
+    #     db.session.add(new_favorite)
+    #     flash("Artwork added to favorites.", "success")
+
+    # db.session.commit()    
+    # return redirect('/users/profile')
     
 @app.route('/users/favorites')
 def all_favorites():
@@ -348,79 +294,25 @@ def not_favorite_image(artwork_id):
 # Surprise Me Routes
 """the purpose of these routes is to 
 show users artwork from the centuries they didn't chose."""
-@app.route('/users/surprise')
+@app.route('/users/surprise', methods=['POST', 'GET'])
 def suprise_home():
     """Route that shows the suprise page and showcases artwork from unchosen centuries"""
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
     form = FavoriteForm()
-    user = User.query.get_or_404(session['curr_user']) 
-    user_century = Century.query.get(user.century_id).century_name
+    user = g.user
+    
+    artworks_details, random_century = APIRequests.suprise_me(user)
 
-    unchosen_centuries = Century.query.filter(Century.century_name != user_century).all()
-    if not unchosen_centuries:
-        flash("No unchosen centuries found.", "danger")
-        return redirect("/users/profile")
-
-    random_century = random.choice(unchosen_centuries)
-    century_name = random_century.century_name
-
-    century_dates = {
-        '18th Century': ('1700', '1799'),
-        '19th Century': ('1800', '1899'),
-        '20th Century': ('1900', '1999'),
-    }
-
-    date_range = century_dates.get(century_name)
-    if not date_range:
-        flash("Could not find date range for the selected century.", "danger")
-        return redirect("/users/profile")
-
-    favorite_artwork_ids = [fav.artwork_id for fav in Favorite.query.filter_by(user_id=user.id).all()]
-    not_favorite_artwork_ids = [not_fav.artwork_id for not_fav in NotFavorite.query.filter_by(user_id=user.id).all()]
-
-    query_params = {
-        'limit': 10,
-        'page': 4,
-        'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display, on_view, on_loan'
-    }
-
-    artworks_details = []  # Initialize artworks_details as an empty list
-
-    try:
-        response = requests.get(API_URL, headers=HEADER, params=query_params)
-        if response.status_code == 200:
-            res_data = response.json()
-            artworks = res_data.get('data', [])
-            date_range_int = [int(date_range[0]), int(date_range[1])]
-            for artwork in artworks:
-                if int(artwork.get('date_start', 0)) >= date_range_int[0] and int(artwork.get('date_end', 0)) <= date_range_int[1]:
-                    if artwork['id'] not in favorite_artwork_ids and artwork['id'] not in not_favorite_artwork_ids:
-                        artworks_details.append({
-                            'id': artwork.get('id'),
-                            'title': artwork.get('title'),
-                            'artist_title': artwork.get('artist_title', 'Unknown Artist'),
-                            'artist_display': artwork.get('artist_display', ''),
-                            'date_start': artwork.get('date_start', ''),
-                            'date_end': artwork.get('date_end', ''),
-                            'date_display': artwork.get('date_display', ''),
-                            'medium_display': artwork.get('medium_display', ''),
-                            'dimensions': artwork.get('dimensions', ''),
-                            'on_view': artwork.get('on_view'),
-                            'on_loan': artwork.get('on_loan'),
-                            'image_id': artwork.get('image_id'),
-                            'image_url': f"https://www.artic.edu/iiif/2/{artwork['image_id']}/full/843,/0/default.jpg" if artwork.get('image_id') else None
-                        })
-        else:
-            flash("Failed to fetch artworks from the API.", "danger")
-    except requests.RequestException as e:
-        flash(f"Error connecting to the Art Institute of Chicago API: {e}", "danger")
-
-    # Choose a random artwork to display, or none if no suitable artwork was found
-    artwork_to_display = random.choice(artworks_details) if artworks_details else None
-
-    return render_template('/artwork/surprise.html', artwork=artwork_to_display, user=user, form=form, date_range=date_range)
+    if artworks_details:
+        artwork_to_display = random.choice(artworks_details) if artworks_details else None
+        return render_template('/artwork/surprise.html', artwork=artwork_to_display, user=user, form=form, century=random_century)
+    else:
+        flash("Failed to fetch artworks from the API.", "danger")
+        redirect('/users/suprise')
+    
+    
 ##############################################################################
 # Homepage
 

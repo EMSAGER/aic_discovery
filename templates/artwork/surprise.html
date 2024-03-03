@@ -1,25 +1,38 @@
 {% extends 'base.html' %}
 
-{% block body_class %}profile{% endblock %}
+
+{% block title %}surprise{% endblock %}
 
 {% block content %}
 
-<h2>Artwork from {{date_range}}</h2>
+<h2>Artwork from the {{ century }}</h2>
 <p>The purpose of this section is to introduce you to artwork from other centuries.</p>
 <div class="container mt-5">
     <div class="row align-items-start">
         <!-- Sidebar with Artwork Details -->
       
         <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
+            <div class="card surprise-artwork-card">
+                <div class="card-body" id="{{artwork.id}}">
                     <h5 class="card-title">{{ artwork.title }}</h5>
                     <p class="card-text">Artist: {{ artwork.artist_title }}</p>
-                    <p class="card-text">Date: {{ artwork.date_display }}</p>
+                    <p class="card-text">Date: {{ artwork.date_start }} - {{ artwork.date_end }}</p>
                     <p class="card-text">Medium: {{ artwork.medium_display }}</p>
                     <p class="card-text">Dimensions: {{ artwork.dimensions }}</p>
+                    
+                    {% if artwork.artist_display == None %}
+                    <p class="card-text">Biography: No artist biography available.</p>
+                    {% else %}
                     <p class="card-text">Biography: {{ artwork.artist_display }}</p>
+                    {% endif %}
 
+                    {% if artwork.on_loan == True %}
+                        <p class="card-text">Currently On Loan: Yes</p>
+                    {% elif artwork.on_view == True %}
+                        <p class="card-text">Currently On View: Yes</p>
+                    {% else %}    
+                        <p class="card-text">Not available for public viewing.</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -29,10 +42,10 @@
         </div>
         <!-- Column for buttons -->
         <div class="col-md-3 d-flex flex-column justify-content-start">
-            <form action="/users/favorites/{{ artwork.id }}" method="post">
+            <form action="/users/favorites/{{ artwork.id }}?return_to=/artwork/surprise" class="suprise-favorite-form" method="post">
                 {{ form.csrf_token }}
-                <button type="submit" class="btn btn-success"><i class="fa-regular fa-thumbs-up"></i> Like</button>
-                <a href="/users/not_favorites/{{artwork.id}}" class="btn btn-danger"><i class="fa-regular fa-thumbs-down"></i> Dislike</a>
+                <button type="button" class="btn btn-success fav-surprise" data-artwork-id="{{ artwork.id }}"><i class="fa-regular fa-thumbs-up"></i> Like</button>
+                <a href="/users/not_favorites/{{artwork.id}}?return_to=/artwork/surprise" class="btn btn-danger"><i class="fa-regular fa-thumbs-down"></i> Dislike</a>
             </form>
         </div>
 

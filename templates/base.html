@@ -9,7 +9,7 @@
     <script src="https://kit.fontawesome.com/70f2a030ec.js" crossorigin="anonymous"></script>
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
-
+    
     <title>{% block title %}{% endblock %}</title>
 </head>
 <body>
@@ -44,13 +44,13 @@
         {% endfor %}
       
     {% block content %}{% endblock %}
-
-    <script src="https://unpkg.com/axios/dist/axios.js"></script>
-    <script src="https://unpkg.com/jquery"></script>
     <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
-
     <script src="https://unpkg.com/bootstrap"></script>
+    <script src="https://unpkg.com/jquery"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
     <script src="/static/app.js"></script>
+  
 </body>
 
 </html>
