@@ -15,21 +15,19 @@
                         <p class="card-text text-center">{{ artwork.date_start }} - {{artwork.date_end}}</p>
                         <p class="card-text text-center"></p>
                         <p class="card-text text-center">{{ artwork.artist_title }}</p>
-                        <div class="d-flex justify-content-around">
-                            <form action="/users/favorites/{{ artwork.id }}" method="post" class="d-inline">
-                                <button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-thumbs-up"></i> Like</button>
-                            </form>
-                            <a href="/users/not_favorites/{{artwork.id}}" class="btn btn-danger btn-sm d-inline"><i class="fa-regular fa-thumbs-down"></i> Dislike</a>
-                        </div>
-                        </div>
+                        <form method="post" class="un-favorite-form text-end">
+                            <input type="hidden" name="artwork_id" value="{{ artwork.id }}">
+                            <input type="hidden" name="action" value="not_favorite">
+                            {{ form.csrf_token }}
+                            <button type="submit" class="btn btn-danger"><i class="fa-regular fa-trash-can"></i></button>
+                        </form>
                     </div>
-            
             </div>
-            {% if loop.index %3 == 0 %}
+        </div>
+            {% if loop.index %3 == 0 and not loop.last %}
                 </div><div class="row">
             {% endif %}
             {% endfor %}
-        </div>
     </div>
 </div>
 {% endblock %}

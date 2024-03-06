@@ -147,7 +147,7 @@ def logout():
 ##############################################################################
 # User focused routes
 
-@app.route('/users/profile')
+@app.route('/users/profile', methods=["GET", "POST"])
 def user_profile():
     """Returns the user's profile page
     This route will also communicate with the API server to pull an image filtered by the century picked"""
@@ -203,33 +203,29 @@ def edit_profile():
 
 ##############################################################################
 # Art focused routes
-# @app.route('/users/favorites/<int:artwork_id>', methods=["GET", "POST"])
-# def favorite_artwork(artwork_id):
-#     """Favorites an image. It checks to make sure the image isn't liked beforehand.
-#     If not, it is added to the favorites table & redirected to the page"""
 
-#     if not g.user:
-#         flash("Access unauthorized.", "danger")
-#         return redirect("/")
-    
-#     user = g.user
-
-#     result, status = fav_artwork(user, artwork_id)
-
-#     if status == 201:
-#         flash(result["message"], "success")
-#     else:
-#         flash(result["error"], "danger")
-
-#     return redirect('/users/profile')
-    
-@app.route('/users/favorites')
+@app.route('/users/favorites', methods=["GET", "POST"])
 def all_favorites():
     """Retrieves all of the current user's favorited works"""
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
+    
+    
     # Retrieve all favorites for the current user and join with Artwork to get details
+    user = g.user
+    form = FavoriteForm()
+
+    if request.method == 'POST':
+        artwork_id = request.form.get('artwork_id')
+        action = request.form.get('action')
+
+        if action == 'not_favorite':
+            unfavorite_artwork(user, artwork_id)
+    #redirect to avoid resubmission 
+            return redirect('/users/favorites')
+
+
     favorites = (db.session.query(Favorite, Artwork)
                  .join(Artwork)
                  .filter(Favorite.artwork_id == Artwork.id)
@@ -237,6 +233,7 @@ def all_favorites():
     
     seen = set()
     favorite_artworks = []
+    
     for fav in favorites:
         if fav.Artwork.image_id not in seen:
             seen.add(fav.Artwork.image_id)
@@ -247,32 +244,9 @@ def all_favorites():
                           'date_start': fav.Artwork.date_start,
                           'date_end': fav.Artwork.date_end,
                           'image_url': f"https://www.artic.edu/iiif/2/{fav.Artwork.image_id}/full/843,/0/default.jpg"})
-    
-    return render_template('/favorites/favorites.html', favorites=favorite_artworks)
+            
+    return render_template('/favorites/favorites.html', favorites=favorite_artworks, form=form)
 
-# @app.route('/users/not_favorites/<int:artwork_id>', methods=["GET", "POST"])
-# def not_favorite_artwork(artwork_id):
-#     """Puts the unliked image into it's own category so that a user won't see it again"""
-#     if not g.user:
-#             flash("Access unauthorized.", "danger")
-#             return redirect("/users/profile")
-    
-#     user = g.user
-
-#     result, status = dislike_artwork(user, artwork_id)
-
-#     if status == 201:
-#         flash(result["message"], "success")
-#     else:
-#         flash(result["error"], "danger")
-
-#     return_to = request.args.get('return_to', 'profile')
-#     if return_to == 'surprise':
-#         return redirect('/users/surprise')
-#     else:
-#         return redirect('/users/profile')
-
-##############################################################################
 # Surprise Me Routes
 """the purpose of these routes is to 
 show users artwork from the centuries they didn't chose."""
@@ -284,8 +258,14 @@ def surprise_home():
         return redirect("/")
     
     user = g.user
+    form = FavoriteForm()
+    artworks_details, random_century = APIRequests.surprise_me(user)
+
+    if artworks_details:
+        artwork_to_display = random.choice(artworks_details) if artworks_details else None
+        return render_template('/users/surprise.html', artwork=artwork_to_display, user=user, form=form, century=random_century)
     
-    if request.method == 'POST':
+    elif request.method == 'POST':
         artwork_id = request.form.get('artwork_id')
         action = request.form.get('action')
 
@@ -296,12 +276,6 @@ def surprise_home():
         #redirect to avoid resubmission 
         return redirect('/users/surprise')
     
-    form = FavoriteForm()
-    artworks_details, random_century = APIRequests.surprise_me(user)
-
-    if artworks_details:
-        artwork_to_display = random.choice(artworks_details) if artworks_details else None
-        return render_template('/users/surprise.html', artwork=artwork_to_display, user=user, form=form, century=random_century)
     else:
         flash("Failed to fetch SURPRISE data.", "danger")
         return redirect('/users/profile')
