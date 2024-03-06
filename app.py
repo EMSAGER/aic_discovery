@@ -217,7 +217,7 @@ def all_favorites():
         if action == 'favorite':
             fav_artwork(user, artwork_id)
         elif action == 'not_favorite':
-            dislike_artwork(user, artwork_id)
+            unfavorite_artwork(user, artwork_id)
         #redirect to avoid resubmission 
         return redirect('/users/profile')
 
