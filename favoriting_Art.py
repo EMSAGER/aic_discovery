@@ -10,44 +10,43 @@ class ArtworkFavorites:
         
         artwork = Artwork.query.get(artwork_id)
         if not artwork:
-            return {"error": "Artwork not found."}, 403
+            return {"error": "Artwork not found."}, 404
         
+        if not artwork.artist_id:
+            return {"error": "Artwork must have an associated artist."}, 400
 
-        existing_favorite = Favorite.query.filter_by(user_id=user.id, artwork_id=artwork_id).first()
-
+        existing_favorite = Favorite.query.filter_by(
+            user_id=user.id, artwork_id=artwork_id, artist_id=artwork.artist_id).first()
         if existing_favorite:
-            return {"message": "This artwork is already in your favorites"}, 200
+           return {"message": "This artwork is already in your favorites"}, 200
         
-        new_favorite = Favorite(user_id=user.id, artwork_id=artwork_id)
+        new_favorite = Favorite(user_id=user.id, artwork_id=artwork_id, artist_id=artwork.artist_id)
         db.session.add(new_favorite)
         db.session.commit()
         return {"message": "Artwork added to favorites"}, 201
     
     @classmethod
     def dislike_artwork(cls, user, artwork_id):
-        """dislike an artwork"""
+        """Dislike an artwork"""
         if not user:
             return {"error": "Access unauthorized."}, 403
-        
+
         artwork = Artwork.query.get(artwork_id)
         if not artwork:
-            return {"error": "Artwork not found."}, 403
-        
-        existing_not_favorite = NotFavorite.query.filter_by(user_id=user.id, artwork_id=artwork_id).first()
+            return {"error": "Artwork not found."}, 404
 
+        if not artwork.artist_id:
+            return {"error": "Missing artist_id for artwork."}, 400
+
+        existing_not_favorite = NotFavorite.query.filter_by(user_id=user.id, artwork_id=artwork_id, artist_id=artwork.artist_id).first()
         if existing_not_favorite:
             return {"message": "You already disliked this image"}, 200
-        artist_id = artwork.artist_id
-        not_favorite = NotFavorite.query.filter_by(user_id=user, artwork_id=artwork_id, artist_id = artist_id).first()
-        if not_favorite:
-            #removes the favorite tag -- does not dislike
-            db.session.delete(not_favorite)
-            flash("Dislike removed.", "success")
-        else:
-            new_not_favorite = NotFavorite(user_id=user.id, artwork_id=artwork_id, artist_id=artist_id)
-            db.session.add(new_not_favorite)
-            db.session.commit()  
-            return {"message": "Artwork disliked"}, 201
+
+        # If it's not already disliked, create a new NotFavorite
+        new_not_favorite = NotFavorite(user_id=user.id, artwork_id=artwork_id, artist_id=artwork.artist_id)
+        db.session.add(new_not_favorite)
+        db.session.commit()
+        return {"message": "Artwork disliked"}, 201
         
     @classmethod
     def unfavorite_artwork(cls, user, artwork_id):

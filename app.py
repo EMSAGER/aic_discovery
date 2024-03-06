@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, session, flash, g, jsonify
+from flask import Flask, render_template, redirect, session, flash, g, request
 from flask_debugtoolbar import DebugToolbarExtension
 from models import connect_db, db, User, Favorite, Artwork, Century, NotFavorite
 from forms import UserEditForm, UserForm, LoginForm, FavoriteForm
@@ -28,7 +28,9 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
 connect_db(app)
 toolbar = DebugToolbarExtension(app)
 
-favorite = favoriting_Art.ArtworkFavorites
+fav_artwork = ArtworkFavorites.fav_artwork
+dislike_artwork = ArtworkFavorites.dislike_artwork
+unfavorite_artwork = ArtworkFavorites.unfavorite_artwork
 ##############################################################################
 # User signup/login/logout
 
@@ -153,15 +155,23 @@ def user_profile():
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
-    
-    form = FavoriteForm()
     user = g.user
+
+    if request.method == 'POST':
+        artwork_id = request.form.get('artwork_id')
+        action = request.form.get('action')
+
+        if action == 'favorite':
+            fav_artwork(user, artwork_id)
+        elif action == 'not_favorite':
+            dislike_artwork(user, artwork_id)
+        #redirect to avoid resubmission 
+        return redirect('/users/profile')
+
+    form = FavoriteForm()
     user_century = Century.query.get(user.century_id).century_name
-
     saved_artworks = APIRequests.get_artworks(user)
-
     selected_artwork = random.choice(saved_artworks) if saved_artworks else None
-    
     return render_template('/users/profile.html', selected_artwork=selected_artwork, user=user, century = user_century, form=form)
 
 @app.route('/users/profile/edit', methods=["GET", "POST"])
@@ -193,42 +203,25 @@ def edit_profile():
 
 ##############################################################################
 # Art focused routes
-@app.route('/users/favorites/<int:artwork_id>', methods=["GET", "POST"])
-def favorite_artwork(artwork_id):
-    """Favorites an image. It checks to make sure the image isn't liked beforehand.
-    If not, it is added to the favorites table & redirected to the page"""
+# @app.route('/users/favorites/<int:artwork_id>', methods=["GET", "POST"])
+# def favorite_artwork(artwork_id):
+#     """Favorites an image. It checks to make sure the image isn't liked beforehand.
+#     If not, it is added to the favorites table & redirected to the page"""
 
-    if not g.user:
-        flash("Access unauthorized.", "danger")
-        return redirect("/")
+#     if not g.user:
+#         flash("Access unauthorized.", "danger")
+#         return redirect("/")
     
-    user = g.user
+#     user = g.user
 
-    result, status = ArtworkFavorites
-    # artwork = Artwork.query.get(artwork_id)
-    # if not artwork:
-    #     flash("Artwork not found.", "danger")
-    #     return redirect("/users/profile")
-    
-    # existing_favorite = Favorite.query.join(Artwork, Favorite.artwork_id == Artwork.id).filter(Artwork.image_id == artwork.image_id).first()
+#     result, status = fav_artwork(user, artwork_id)
 
-    # if existing_favorite:
-    #     flash("This artwork is already in your favorites.", "warning")
-    #     return redirect("/users/profile")
-    
-    # artist_id = artwork.artist_id
-    # favorite = Favorite.query.filter_by(user_id=user, artwork_id=artwork_id, artist_id = artist_id).first()
-    # if favorite:
-    #     #removes the favorite tag -- does not dislike
-    #     db.session.delete(favorite)
-    #     flash("Artwork removed from favorites.", "warning")
-    # else:
-    #     new_favorite = Favorite(user_id=user, artwork_id=artwork_id, artist_id=artist_id)
-    #     db.session.add(new_favorite)
-    #     flash("Artwork added to favorites.", "success")
+#     if status == 201:
+#         flash(result["message"], "success")
+#     else:
+#         flash(result["error"], "danger")
 
-    # db.session.commit()    
-    # return redirect('/users/profile')
+#     return redirect('/users/profile')
     
 @app.route('/users/favorites')
 def all_favorites():
@@ -257,60 +250,61 @@ def all_favorites():
     
     return render_template('/favorites/favorites.html', favorites=favorite_artworks)
 
-@app.route('/users/not_favorites/<int:artwork_id>', methods=["GET", "POST"])
-def not_favorite_image(artwork_id):
-    """Puts the unliked image into it's own category so that a user won't see it again"""
-    if not g.user:
-            flash("Access unauthorized.", "danger")
-            return redirect("/users/profile")
-        
-    user = g.user.id
-    artwork = Artwork.query.get(artwork_id)
-    if not artwork:
-        flash("Artwork not found.", "danger")
-        return redirect("/users/profile")
+# @app.route('/users/not_favorites/<int:artwork_id>', methods=["GET", "POST"])
+# def not_favorite_artwork(artwork_id):
+#     """Puts the unliked image into it's own category so that a user won't see it again"""
+#     if not g.user:
+#             flash("Access unauthorized.", "danger")
+#             return redirect("/users/profile")
     
-    existing_not_favorite = NotFavorite.query.join(Artwork, NotFavorite.artwork_id == Artwork.id).filter(Artwork.image_id == artwork.image_id).first()
+#     user = g.user
 
-    if existing_not_favorite:
-        flash("This artwork is already in your favorites.", "warning")
-        return redirect("/users/profile")
-    
-    artist_id = artwork.artist_id
-    not_favorite = NotFavorite.query.filter_by(user_id=user, artwork_id=artwork_id, artist_id = artist_id).first()
-    if not_favorite:
-        #removes the favorite tag -- does not dislike
-        db.session.delete(not_favorite)
-        flash("Dislike removed.", "success")
-    else:
-        new_not_favorite = NotFavorite(user_id=user, artwork_id=artwork_id, artist_id=artist_id)
-        db.session.add(new_not_favorite)
-        flash("Artwork disliked.", "success")
+#     result, status = dislike_artwork(user, artwork_id)
 
-    db.session.commit()    
-    return redirect('/users/profile')
+#     if status == 201:
+#         flash(result["message"], "success")
+#     else:
+#         flash(result["error"], "danger")
+
+#     return_to = request.args.get('return_to', 'profile')
+#     if return_to == 'surprise':
+#         return redirect('/users/surprise')
+#     else:
+#         return redirect('/users/profile')
 
 ##############################################################################
 # Surprise Me Routes
 """the purpose of these routes is to 
 show users artwork from the centuries they didn't chose."""
 @app.route('/users/surprise', methods=['POST', 'GET'])
-def suprise_home():
-    """Route that shows the suprise page and showcases artwork from unchosen centuries"""
+def surprise_home():
+    """Route that shows the surprise page and showcases artwork from unchosen centuries"""
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
-    form = FavoriteForm()
+    
     user = g.user
     
-    artworks_details, random_century = APIRequests.suprise_me(user)
+    if request.method == 'POST':
+        artwork_id = request.form.get('artwork_id')
+        action = request.form.get('action')
+
+        if action == 'favorite':
+            fav_artwork(user, artwork_id)
+        elif action == 'not_favorite':
+            dislike_artwork(user, artwork_id)
+        #redirect to avoid resubmission 
+        return redirect('/users/surprise')
+    
+    form = FavoriteForm()
+    artworks_details, random_century = APIRequests.surprise_me(user)
 
     if artworks_details:
         artwork_to_display = random.choice(artworks_details) if artworks_details else None
-        return render_template('/artwork/surprise.html', artwork=artwork_to_display, user=user, form=form, century=random_century)
+        return render_template('/users/surprise.html', artwork=artwork_to_display, user=user, form=form, century=random_century)
     else:
-        flash("Failed to fetch artworks from the API.", "danger")
-        redirect('/users/suprise')
+        flash("Failed to fetch SURPRISE data.", "danger")
+        return redirect('/users/profile')
     
     
 ##############################################################################

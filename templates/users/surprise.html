@@ -42,13 +42,19 @@
         </div>
         <!-- Column for buttons -->
         <div class="col-md-3 d-flex flex-column justify-content-start">
-            <form action="/users/favorites/{{ artwork.id }}?return_to=/artwork/surprise" class="suprise-favorite-form" method="post">
+            <form method="post" class="favorite-form">
+                <input type="hidden" name="artwork_id" value="{{ selected_artwork.id }}">
+                <input type="hidden" name="action" value="favorite">
                 {{ form.csrf_token }}
-                <button type="button" class="btn btn-success fav-surprise" data-artwork-id="{{ artwork.id }}"><i class="fa-regular fa-thumbs-up"></i> Like</button>
-                <a href="/users/not_favorites/{{artwork.id}}?return_to=/artwork/surprise" class="btn btn-danger"><i class="fa-regular fa-thumbs-down"></i> Dislike</a>
+                <button type="submit" class="btn btn-success"><i class="fa-regular fa-thumbs-up"></i> Like</button>
+            </form>
+            <form method="post" class="un-favorite-form">
+                <input type="hidden" name="artwork_id" value="{{ selected_artwork.id }}">
+                <input type="hidden" name="action" value="not_favorite">
+                {{ form.csrf_token }}
+                <button type="submit" class="btn btn-danger"><i class="fa-regular fa-thumbs-down"></i> Dislike</button>
             </form>
         </div>
-
     </div>
 </div>
 

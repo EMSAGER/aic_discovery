@@ -5,7 +5,7 @@ import requests
 import random
 from artwork import SaveArtwork
 from flask import flash
-from models import connect_db, db, Favorite, NotFavorite, Century
+from models import Favorite, NotFavorite, Century
 
 save_artwork = SaveArtwork.save_artwork
 
