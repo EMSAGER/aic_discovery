@@ -54,12 +54,6 @@ def do_login(user):
     session[CURR_USER_KEY] = user.id
 
 
-def do_logout():
-    """Logout user."""
-
-    if CURR_USER_KEY in session:
-        del session[CURR_USER_KEY]
-
 def initialize_centuries():
     if not Century.query.first():
         centuries = ['18th Century', '19th Century', '20th Century']
@@ -139,8 +133,8 @@ def login():
 @app.route('/logout')
 def logout():
     """Handle logout of user."""
-    if 'curr_user' in session:
-        del session['curr_user']
+    if CURR_USER_KEY in session:
+        del session[CURR_USER_KEY]
     flash("Goodbye!", "primary")
     return redirect('/login')
 
@@ -220,10 +214,12 @@ def all_favorites():
         artwork_id = request.form.get('artwork_id')
         action = request.form.get('action')
 
-        if action == 'not_favorite':
-            unfavorite_artwork(user, artwork_id)
-    #redirect to avoid resubmission 
-            return redirect('/users/favorites')
+        if action == 'favorite':
+            fav_artwork(user, artwork_id)
+        elif action == 'not_favorite':
+            dislike_artwork(user, artwork_id)
+        #redirect to avoid resubmission 
+        return redirect('/users/profile')
 
 
     favorites = (db.session.query(Favorite, Artwork)
@@ -259,22 +255,23 @@ def surprise_home():
     
     user = g.user
     form = FavoriteForm()
+
+    if request.method == 'POST':
+        artwork_id = request.form.get('artwork_id')
+        action = request.form.get('action')
+
+        if action == 'favorite':
+            result, status = fav_artwork(user, artwork_id)
+        elif action == 'not_favorite':
+            result, status = dislike_artwork(user, artwork_id)
+        #redirect to avoid resubmission 
+        return redirect('/users/surprise')
+
     artworks_details, random_century = APIRequests.surprise_me(user)
 
     if artworks_details:
         artwork_to_display = random.choice(artworks_details) if artworks_details else None
         return render_template('/users/surprise.html', artwork=artwork_to_display, user=user, form=form, century=random_century)
-    
-    elif request.method == 'POST':
-        artwork_id = request.form.get('artwork_id')
-        action = request.form.get('action')
-
-        if action == 'favorite':
-            fav_artwork(user, artwork_id)
-        elif action == 'not_favorite':
-            dislike_artwork(user, artwork_id)
-        #redirect to avoid resubmission 
-        return redirect('/users/surprise')
     
     else:
         flash("Failed to fetch SURPRISE data.", "danger")
