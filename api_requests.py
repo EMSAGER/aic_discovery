@@ -3,11 +3,11 @@
 ###this should handle the response requests
 import requests
 import random
-from artwork import SaveArtwork
+from artwork import save_artwork
 from flask import flash
 from models import Favorite, NotFavorite, Century
 
-save_artwork = SaveArtwork.save_artwork
+
 
 class APIRequests:
     CURR_USER_KEY = "curr_user"
@@ -27,8 +27,8 @@ class APIRequests:
         date_range = cls.century_dates.get(user_century, (None, None))
         query_params = {
             'limit': 100,
-            'page' : 10,
-            'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display, on_view, on_loan'
+            'page' : 100,
+            'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display'
         }
         
         try:
@@ -73,8 +73,8 @@ class APIRequests:
         not_favorite_artwork_ids = [not_fav.artwork_id for not_fav in NotFavorite.query.filter_by(user_id=user.id).all()]
 
         query_params = {
-            'limit': 10,
-            'page': 4,
+            'limit': 100,
+            'page': 100,
             'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display, on_view, on_loan'
         }
         

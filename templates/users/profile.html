@@ -23,13 +23,6 @@
                     <p class="card-text">Biography: {{ selected_artwork.artist_display }}</p>
                     {% endif %}
 
-                    {% if selected_artwork.on_loan == True %}
-                        <p class="card-text">Currently On Loan: Yes</p>
-                    {% elif selected_artwork.on_view == True %}
-                        <p class="card-text">Currently On View: Yes</p>
-                    {% else %}    
-                        <p class="card-text">Not available for public viewing.</p>
-                    {% endif %}
                 </div>
             </div>
         </div>

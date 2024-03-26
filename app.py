@@ -219,7 +219,7 @@ def all_favorites():
         elif action == 'not_favorite':
             unfavorite_artwork(user, artwork_id)
         #redirect to avoid resubmission 
-        return redirect('/users/profile')
+        return redirect('/users/favorites')
 
 
     favorites = (db.session.query(Favorite, Artwork)
@@ -241,7 +241,7 @@ def all_favorites():
                           'date_end': fav.Artwork.date_end,
                           'image_url': f"https://www.artic.edu/iiif/2/{fav.Artwork.image_id}/full/843,/0/default.jpg"})
             
-    return render_template('/favorites/favorites.html', favorites=favorite_artworks, form=form)
+    return render_template('/users/favorites.html', favorites=favorite_artworks, form=form)
 
 # Surprise Me Routes
 """the purpose of these routes is to 
@@ -261,9 +261,11 @@ def surprise_home():
         action = request.form.get('action')
 
         if action == 'favorite':
-            result, status = fav_artwork(user, artwork_id)
+            fav_artwork(user, artwork_id)
         elif action == 'not_favorite':
-            result, status = dislike_artwork(user, artwork_id)
+            unfavorite_artwork(user, artwork_id)
+        
+
         #redirect to avoid resubmission 
         return redirect('/users/surprise')
 
