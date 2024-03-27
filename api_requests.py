@@ -20,16 +20,15 @@ class APIRequests:
         '19th Century': ('1800', '1899'),
         '20th Century': ('1900', '1999'),
     }
-
+    
     @classmethod
     def get_artworks(cls, user):
         user_century = Century.query.get(user.century_id).century_name
         date_range = cls.century_dates.get(user_century, (None, None))
-        saved_artworks = []
         total_art_for_app = 50
         art_fetched = 0
         page = 1
-
+        saved_artworks = []
         while art_fetched < total_art_for_app:
             query_params = {
                 'limit': 100,
@@ -53,6 +52,7 @@ class APIRequests:
                         if saved_artwork:
                             saved_artworks.append(saved_artwork)
                             art_fetched += 1
+                            
                 else:
                     flash("Failed to fetch artworks from the API", "danger")
                     break
@@ -60,8 +60,8 @@ class APIRequests:
             except requests.RequestException as e:
                 flash(f"Error connecting to the Art Institute of Chicago API: {e}", "danger")
                 break
-        page += 1
-    
+        
+            page +=1
         return saved_artworks
 
     @classmethod
@@ -69,7 +69,6 @@ class APIRequests:
         """Fetches artworks from a randomly selected unchosen century."""
         
         user_century = Century.query.get(user.century_id).century_name
-
         unchosen_centuries = [c for c in cls.century_dates if c != user_century]
         
         if not unchosen_centuries:
@@ -79,38 +78,46 @@ class APIRequests:
         random_century = random.choice(unchosen_centuries)
         date_range = cls.century_dates.get(random_century, (None, None))
 
-        favorite_artwork_ids = [fav.artwork_id for fav in Favorite.query.filter_by(user_id=user.id).all()]
-        not_favorite_artwork_ids = [not_fav.artwork_id for not_fav in NotFavorite.query.filter_by(user_id=user.id).all()]
+        total_surprise = 50
+        surprised_fetch = 0
+        page = 1
+        saved_artworks = []
 
-        query_params = {
-            'total': 100,
-            'limit': 100,
-            'page' : 5,
-            'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display, on_view, on_loan'
-        }
-        
-        try:
-            response = requests.get(cls.API_URL, headers=cls.HEADER, params=query_params)
-            if response.status_code == 200:
-                res_data = response.json()
-                artworks = res_data.get('data', [])
-                saved_artworks = []
-                favorite_artwork_ids = [fav.artwork_id for fav in Favorite.query.filter_by(user_id=user.id).all()]
-                not_favorite_artwork_ids = [not_fav.artwork_id for not_fav in NotFavorite.query.filter_by(user_id=user.id).all()]
-                
-                artworks_details = cls.filter_artworks(artworks, favorite_artwork_ids, not_favorite_artwork_ids, date_range)
-                for artwork in artworks_details:
-                     saved_artwork = save_artwork(artwork_detail=artwork)
-                     if saved_artwork:
-                          saved_artworks.append(saved_artwork)
-                return saved_artworks, random_century
-            else:
-                flash("Failed to fetch artworks from the API", "danger")
-                return None
+        while surprised_fetch < total_surprise:
+            query_params = {
+                'limit': 100,
+                'page' : page,
+                'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display, on_view, on_loan'
+            }
             
-        except requests.RequestException as e:
-            flash(f"Error connecting to the Art Institute of Chicago API: {e}", "danger")
-            return None
+            try:
+                response = requests.get(cls.API_URL, headers=cls.HEADER, params=query_params)
+                if response.status_code == 200:
+                    res_data = response.json()
+                    artworks = res_data.get('data', [])
+                    favorite_artwork_ids = [fav.artwork_id for fav in Favorite.query.filter_by(user_id=user.id).all()]
+                    not_favorite_artwork_ids = [not_fav.artwork_id for not_fav in NotFavorite.query.filter_by(user_id=user.id).all()]
+                    
+                    artworks_details = cls.filter_artworks(artworks, favorite_artwork_ids, not_favorite_artwork_ids, date_range)
+                    for artwork in artworks_details:
+                        if surprised_fetch >= total_surprise:
+                            break
+                        saved_artwork = save_artwork(artwork_detail=artwork)
+                        if saved_artwork:
+                            saved_artworks.append(saved_artwork)
+                            surprised_fetch +=1
+                            
+                    
+                else:
+                    flash("Failed to fetch artworks from the API", "danger")
+                    break
+                
+            except requests.RequestException as e:
+                flash(f"Error connecting to the Art Institute of Chicago API: {e}", "danger")
+                break
+            
+            page += 1
+        return saved_artworks, random_century
         
     @classmethod
     def filter_artworks(cls, artworks, favorite_artwork_ids, not_favorite_artwork_ids, date_range):
