@@ -21,18 +21,11 @@
                     <p class="card-text">Dimensions: {{ artwork.dimensions }}</p>
                     
                     {% if artwork.artist_display == None %}
-                    <p class="card-text">Biography: No artist biography available.</p>
+                    <p class="card-text"></p>
                     {% else %}
                     <p class="card-text">Biography: {{ artwork.artist_display }}</p>
                     {% endif %}
 
-                    {% if artwork.on_loan == True %}
-                        <p class="card-text">Currently On Loan: Yes</p>
-                    {% elif artwork.on_view == True %}
-                        <p class="card-text">Currently On View: Yes</p>
-                    {% else %}    
-                        <p class="card-text">Not available for public viewing.</p>
-                    {% endif %}
                 </div>
             </div>
         </div>
