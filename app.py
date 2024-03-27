@@ -272,7 +272,7 @@ def surprise_home():
     artworks_details, random_century = APIRequests.surprise_me(user)
 
     if artworks_details:
-        artwork_to_display = random.choice(artworks_details) if artworks_details else None
+        artwork_to_display = random.choice(artworks_details)
         return render_template('/users/surprise.html', artwork=artwork_to_display, user=user, form=form, century=random_century)
     
     else:

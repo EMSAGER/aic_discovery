@@ -25,34 +25,44 @@ class APIRequests:
     def get_artworks(cls, user):
         user_century = Century.query.get(user.century_id).century_name
         date_range = cls.century_dates.get(user_century, (None, None))
-        query_params = {
-            'limit': 100,
-            'page' : 100,
-            'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display'
-        }
-        
-        try:
-            response = requests.get(cls.API_URL, headers=cls.HEADER, params=query_params)
-            if response.status_code == 200:
-                res_data = response.json()
-                artworks = res_data.get('data', [])
-                saved_artworks = []
-                favorite_artwork_ids = [fav.artwork_id for fav in Favorite.query.filter_by(user_id=user.id).all()]
-                not_favorite_artwork_ids = [not_fav.artwork_id for not_fav in NotFavorite.query.filter_by(user_id=user.id).all()]
-                
-                artworks_details = cls.filter_artworks(artworks, favorite_artwork_ids, not_favorite_artwork_ids, date_range)
-                for artwork in artworks_details:
-                     saved_artwork = save_artwork(artwork_detail=artwork)
-                     if saved_artwork:
-                          saved_artworks.append(saved_artwork)
-                return saved_artworks
-            else:
-                flash("Failed to fetch artworks from the API", "danger")
-                return None
+        saved_artworks = []
+        total_art_for_app = 50
+        art_fetched = 0
+        page = 1
+
+        while art_fetched < total_art_for_app:
+            query_params = {
+                'limit': 100,
+                'page' : page,
+                'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display'
+            }
             
-        except requests.RequestException as e:
-            flash(f"Error connecting to the Art Institute of Chicago API: {e}", "danger")
-            return None
+            try:
+                response = requests.get(cls.API_URL, headers=cls.HEADER, params=query_params)
+                if response.status_code == 200:
+                    res_data = response.json()
+                    artworks = res_data.get('data', [])
+                    favorite_artwork_ids = [fav.artwork_id for fav in Favorite.query.filter_by(user_id=user.id).all()]
+                    not_favorite_artwork_ids = [not_fav.artwork_id for not_fav in NotFavorite.query.filter_by(user_id=user.id).all()]
+                    
+                    artworks_details = cls.filter_artworks(artworks, favorite_artwork_ids, not_favorite_artwork_ids, date_range)
+                    for artwork in artworks_details:
+                        if art_fetched >= total_art_for_app:
+                            break
+                        saved_artwork = save_artwork(artwork_detail=artwork)
+                        if saved_artwork:
+                            saved_artworks.append(saved_artwork)
+                            art_fetched += 1
+                else:
+                    flash("Failed to fetch artworks from the API", "danger")
+                    break
+                
+            except requests.RequestException as e:
+                flash(f"Error connecting to the Art Institute of Chicago API: {e}", "danger")
+                break
+        page += 1
+    
+        return saved_artworks
 
     @classmethod
     def surprise_me(cls, user):
@@ -73,8 +83,9 @@ class APIRequests:
         not_favorite_artwork_ids = [not_fav.artwork_id for not_fav in NotFavorite.query.filter_by(user_id=user.id).all()]
 
         query_params = {
+            'total': 100,
             'limit': 100,
-            'page': 100,
+            'page' : 5,
             'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display, on_view, on_loan'
         }
         
@@ -121,8 +132,6 @@ class APIRequests:
                                 'date_display': artwork.get('date_display', ''),
                                 'medium_display': artwork.get('medium_display', ''),
                                 'dimensions': artwork.get('dimensions', ''),
-                                'on_view': artwork.get('on_view'),
-                                'on_loan': artwork.get('on_loan'),
                                 'image_id': artwork.get('image_id'),
                                 'image_url': f"https://www.artic.edu/iiif/2/{artwork['image_id']}/full/843,/0/default.jpg" if artwork.get('image_id') else None
                             })
