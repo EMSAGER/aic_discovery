@@ -1,5 +1,7 @@
 from models import Artwork, Favorite, NotFavorite, db
-import re
+from artwork import SaveArtwork
+
+save_image = SaveArtwork.save_image_file
 
 class ArtworkFavorites:
     NO_USER = 403
@@ -27,6 +29,10 @@ class ArtworkFavorites:
         new_favorite = Favorite(user_id=user.id, artwork_id=artwork_id, artist_id=artwork.artist_id)
         db.session.add(new_favorite)
         db.session.commit()
+
+        #save artwork image
+        if artwork.image_url and artwork.image_id:
+            save_image(artwork.image_url, artwork.image_id, artwork.title)
         return  201
     
 

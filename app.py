@@ -35,7 +35,17 @@ unfavorite_artwork = ArtworkFavorites.unfavorite_artwork
 # User signup/login/logout
 
 
+
+
+
 @app.before_request
+def initialize_app():
+    """initiailiaze application & create necessary directories"""
+    add_user_to_g()
+    create_directories()
+    initialize_centuries()
+    
+
 def add_user_to_g():
     """If we're logged in, add curr user to Flask global."""
 
@@ -44,9 +54,11 @@ def add_user_to_g():
     else:
         g.user = None
 
-def initialize_app():
-    initialize_centuries()
-
+def create_directories():
+    """Create the necessary directories to save favorited images"""
+    IMAGES_DIR_PATH = os.path.join(app.static_folder, 'images')
+    if not os.path.exists(IMAGES_DIR_PATH):
+        os.makedirs(IMAGES_DIR_PATH)
 
 def do_login(user):
     """Log in user."""

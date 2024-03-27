@@ -3,10 +3,11 @@
 ###this should handle the response requests
 import requests
 import random
-from artwork import save_artwork
 from flask import flash
 from models import Favorite, NotFavorite, Century
+from artwork import SaveArtwork
 
+save_artwork = SaveArtwork.save_artwork
 
 
 class APIRequests:
