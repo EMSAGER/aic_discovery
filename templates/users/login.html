@@ -7,7 +7,7 @@
 <div class="container mt-5">
   <div class="row justify-content-md-center">
     <div class="col-md-7 col-lg-5">
-      <h2 class="join-message mb-4 display-4 text-center">Welcome back!</h2>
+      <h2 class="join-message mb-4 display-3 text-center font-weight-bold">Welcome back!</h2>
       <div class="row justify-content-center">
         <form method="POST" id="user_form" class="w-100">
           {{ form.hidden_tag() }}
@@ -17,8 +17,8 @@
               {% for error in field.errors %}
               <span class="text-danger">{{ error }}</span>
               {% endfor %}
-              {{ field.label(class="form-label")}}
-              {{ field(placeholder=field.label.text, class="form-control") }}
+              {{ field.label(class="form-label font-weight-bold h5")}}
+              {{ field(class="form-control") }}
             </div>
           {% endfor %}
           
