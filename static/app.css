@@ -1,17 +1,37 @@
 .navbar {
-    background: url('/static/images/Landscape6.png') repeat center center;
-    background-size: cover;
+    background: #b50938;
+    padding: 10px 0;
 }
 
-.navbar-brand, .nav-link {
+.navbar-brand {
     color: white; 
+    font-size: 24px;
+}
+
+.nav-link, .navbar-form {
+    color: white; 
+    font-size: 22px;
+    padding: 0 10px;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.nav-link:hover, .navbar-form:hover {
+    color: black;
+    background-color: transparent;
+}
+
+.navbar-collapse {
+    justify-content: flex-end;
+    padding-right: 20px;
 }
 
 .navbar * {
     text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.7);
+    font-weight: bold;
 }
 
 .img-fixed-height {
-    height: 400px; 
+    height: 500px; 
     object-fit: cover;
 }

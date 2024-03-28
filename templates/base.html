@@ -13,31 +13,32 @@
     <title>{% block title %}{% endblock %}</title>
 </head>
 <body>
-    
-    <nav class="navbar navbar-expand">
-        <div class="container-fluid">
-          <div class="navbar-header">
-            {% if not g.user %}
-            <a href="/" class="navbar-brand">
-              <span>AIC Discovery</span>
-            </a>
-          </div>
-            <a class="navbar-form navbar-left text-dark" href="/signup">Sign up</a>
-            <a class="navbar-form navbar-left text-dark" href="/login">Log in</a>
-            {% else %}
-            <a href="/users/profile" class="navbar-brand text-lg">
-              <span>{{user.full_name}}</span>
-            </a>
-          </div>
-            <a class="navbar-form navbar-left text-dark" href="/users/profile/edit">Edit Profile</a>
-            <a class="navbar-form navbar-left text-dark" href="/users/favorites">Favorites</a>
-            <a class="navbar-form navbar-left text-dark" href="/users/surprise">Suprise Me!</a>
-            <a class="navbar-form navbar-left text-dark" href="/logout">Log out</a>
-            {% endif %}
-        </ul>
+  <nav class="navbar navbar-expand">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        {% if not g.user %}
+        <a href="/" class="navbar-brand">
+          <span>AIC Discovery</span>
+        </a>
+      </div>
+        <div class="navbar-collapse">
+          <a class="navbar-form" href="/signup">Sign up</a>
+          <a class="navbar-form" href="/login">Log in</a>
+        </div>
+        {% else %}
+        <a href="/users/profile" class="navbar-brand">
+          <span>{{ user.full_name }}</span>
+        </a>
+      </div>
+        <div class="navbar-collapse">
+          <a class="navbar-form" href="/users/profile/edit">Edit Profile</a>
+          <a class="navbar-form" href="/users/favorites">Favorites</a>
+          <a class="navbar-form" href="/users/surprise">Suprise Me!</a>
+          <a class="navbar-form" href="/logout">Log out</a>
+        </div>
+        {% endif %}
     </div>
-</nav>
-      </nav>
+  </nav>
       <div class="container">
         {% for category, message in get_flashed_messages(with_categories=True) %}
         <div class="alert alert-{{ category }}">{{ message }}</div>
@@ -49,8 +50,6 @@
     <script src="https://unpkg.com/jquery"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     
-    <!-- <script src="/static/app.js"></script> -->
-  
 </body>
 
 </html>
