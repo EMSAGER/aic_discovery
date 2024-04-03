@@ -1,14 +1,16 @@
 from unittest import TestCase
-import os
-import random
 from flask import Flask, render_template, redirect, session, flash, g, request
 from flask_debugtoolbar import DebugToolbarExtension
-from models import connect_db, db, User, Favorite, Artwork, Century, NotFavorite
+from models import User, Century
 from sqlalchemy.exc import IntegrityError
 from api_requests import APIRequests
 from favoriting_Art import ArtworkFavorites
 import random
 import os
+
+# run these tests like:
+#
+#    FLASK_ENV=production python -m unittest test_app.py
 
 
 #set up the environmenta database
