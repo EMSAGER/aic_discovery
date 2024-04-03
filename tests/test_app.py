@@ -1,11 +1,10 @@
 from unittest import TestCase
 from flask import Flask, render_template, redirect, session, flash, g, request
 from flask_debugtoolbar import DebugToolbarExtension
-from models import User, Century
-from sqlalchemy.exc import IntegrityError
-from api_requests import APIRequests
-from favoriting_Art import ArtworkFavorites
-import random
+from aic_app.models import User, Century, db, connect_db
+# from sqlalchemy.exc import IntegrityError
+# from aic_app.api_requests import APIRequests
+# from aic_app.favoriting_Art import ArtworkFavorites
 import os
 
 # run these tests like:
@@ -18,7 +17,7 @@ import os
 os.environ['DATABASE_URL'] = "postgresql:///test_aic_capstone"
 
 #import the app
-from app import app, CURR_USER_KEY
+from aic_app.app import app, CURR_USER_KEY
 
 app.config['WTF_CSRF_ENABLED'] = False
 app.config['TESTING'] = True
