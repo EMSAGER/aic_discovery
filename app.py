@@ -41,7 +41,7 @@ unfavorite_artwork = ArtworkFavorites.unfavorite_artwork
 @app.before_request
 def initialize_app():
     """initiailiaze application & create necessary directories"""
-    add_user_to_g()
+    
     create_directories()
     initialize_centuries()
     
