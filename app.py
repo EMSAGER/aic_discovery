@@ -1,10 +1,10 @@
 from flask import Flask, render_template, redirect, session, flash, g, request
 from flask_debugtoolbar import DebugToolbarExtension
-from models import connect_db, db, User, Favorite, Artwork, Century, NotFavorite
-from forms import UserEditForm, UserForm, LoginForm, FavoriteForm
+from  models import connect_db, db, User, Favorite, Artwork, Century
+from  forms import UserEditForm, UserForm, LoginForm, FavoriteForm
 from sqlalchemy.exc import IntegrityError
-from api_requests import APIRequests
-from favoriting_Art import ArtworkFavorites
+from  api_requests import APIRequests
+from  favoriting_Art import ArtworkFavorites
 import random
 import os
 from dotenv import load_dotenv
@@ -44,6 +44,7 @@ def initialize_app():
     
     create_directories()
     initialize_centuries()
+    add_user_to_g()
     
 
 def add_user_to_g():
@@ -97,7 +98,7 @@ def signup():
     If the there already is a user with that username: flash message
     and re-present form.
     """
-    initialize_centuries()
+    # initialize_centuries()
     form = UserForm()
     form.century_id.choices = [(c.id, c.century_name)for c in Century.query.order_by('id')]
     if form.validate_on_submit():
@@ -158,7 +159,7 @@ def user_profile():
     """Returns the user's profile page
     This route will also communicate with the API server to pull an image filtered by the century picked"""
 
-    if not g.user:
+    if not 'user' in g:
         flash("Access unauthorized.", "danger")
         return redirect("/")
     user = g.user

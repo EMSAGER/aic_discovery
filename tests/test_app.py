@@ -1,7 +1,7 @@
 from unittest import TestCase
-from flask import Flask, render_template, redirect, session, flash, g, request
+from flask import Flask
 from flask_debugtoolbar import DebugToolbarExtension
-from aic_app.models import User, Century, db, connect_db
+from models import User, Century, db, Artwork
 # from sqlalchemy.exc import IntegrityError
 # from aic_app.api_requests import APIRequests
 # from aic_app.favoriting_Art import ArtworkFavorites
@@ -9,7 +9,7 @@ import os
 
 # run these tests like:
 #
-#    FLASK_ENV=production python -m unittest test_app.py
+#    FLASK_ENV=production python3 -m unittest tests.test_app.py
 
 
 #set up the environmenta database
@@ -17,12 +17,12 @@ import os
 os.environ['DATABASE_URL'] = "postgresql:///test_aic_capstone"
 
 #import the app
-from aic_app.app import app, CURR_USER_KEY
+from app import app, CURR_USER_KEY
 
 app.config['WTF_CSRF_ENABLED'] = False
-app.config['TESTING'] = True
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SQLALCHEMY_ECHO"] = False
+# app.config['TESTING'] = True
+# app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+# app.config["SQLALCHEMY_ECHO"] = False
 
 class UserViewTestCase(TestCase):
     """Tests for user related routes"""
@@ -30,18 +30,22 @@ class UserViewTestCase(TestCase):
         """Create test client add sample data"""
         self.client = app.test_client()
         self.app_context = app.app_context()
-        with self.app_context():
-            db.create_all()
-            self.populate_db()
-       
+        self.app_context.push()  
+        db.create_all()
+        self.populate_db()
+        
        
     def tearDown(self):
         """Clean up any fouled transaction."""
         db.session.remove()
         db.drop_all()
+        self.app_context.pop()
 
     def populate_db(self):
         """Set up the db with the initial data - helper method"""
+        User.query.delete()
+        Century.query.delete()
+        Artwork.query.delete()
         c_18 = Century(century_name="18th Century")
         c_19 = Century(century_name="19th Century")
         c_20 = Century(century_name="20th Century")
@@ -49,26 +53,47 @@ class UserViewTestCase(TestCase):
         db.session.commit()
 
         self.u1 = User.signup(username="testpotato",
-                                    email="test@test.com",
-                                    password="testuser",
-                                    century_id=c_18)
+                              first_name="Bob",
+                              last_name="taco",
+                              email="test@test.com",
+                              password="testuser",
+                              century_id=c_18.id)
         
         self.u2 = User.signup(username="testuser2",
-                                    email="test2@test.com",
-                                    password="testuser2",
-                                    century_id=c_19)
+                              first_name="Bob2",
+                              last_name="taco2",
+                              email="test2@test.com",
+                              password="testuser2",
+                              century_id=c_19.id) 
         
         self.u3 = User.signup(username="testuser3",
-                                    email="test3@test.com",
-                                    password="testuser3",
-                                    century_id=c_20)
+                              first_name="Bob3",
+                              last_name="taco3",
+                              email="test3@test.com",
+                              password="testuser3",
+                              century_id=c_20.id) 
         
         db.session.add_all([self.u1, self.u2, self.u3])
 
         db.session.commit()
 
+    def test_signup_route_get(self):
+        """test the signup route -- get method"""
+        with app.app_context():
+            with self.client as c:
+                res = c.get('/signup')
+                html = res.get_data(as_text=True)
+
+            self.assertEqual(res.status_code, 200)
+            self.assertIn('name="username"', html)
+            self.assertIn('name="password"', html)
+            self.assertIn('name="email"', html)
+            self.assertIn('name="first_name"', html)
+            self.assertIn('name="last_name"', html)
+            self.assertIn('name="century_id"', html)
+    
     def test_signup_route_post(self):
-        """test the signup route"""
+        """test the signup route -- post method"""
         with app.app_context():
             with self.client as c:
                 res = c.post('/signup', data={
@@ -81,4 +106,35 @@ class UserViewTestCase(TestCase):
                     }, follow_redirects=True)
                 html = res.get_data(as_text=True)
 
-                self.assertEqual(res.status_code, 200)
+            self.assertEqual(res.status_code, 200)
+            self.assertIn('<a class="navbar-form" href="/users/profile/edit">Edit Profile</a>', html)
+            # self.assertIn('<h1 class="display-1 text-center">19th Century Art</h1>', html)
+            self.assertIn('New User', html)
+            
+    
+    def test_login_get(self):
+        """testing the login route -- get method"""
+        with app.app_context():
+            with self.client as c:
+                res = c.get('/login')
+                html = res.get_data(as_text=True)
+
+            self.assertEqual(res.status_code, 200)
+            self.assertIn('name="username"', html)
+            self.assertIn('name="password"', html)
+            self.assertIn('Welcome back!', html)
+
+    def test_login_post(self):
+        """"Testing the login route -- POST method."""
+        with app.app_context():
+            with self.client as c:
+                res = c.post('/login', data={
+                    'username': "testpotato", 
+                    'password': "testuser"
+                    }, follow_redirects=True)
+                html = res.get_data(as_text=True)
+
+            self.assertEqual(res.status_code, 200)
+            self.assertIn('Bob taco', html)
+
+    

@@ -1,6 +1,6 @@
 #This page is for saving the artwork. Either to the DB or to a file (for the image)
 
-from .models import db, Artwork, Artist
+from models import db, Artwork, Artist
 from flask import current_app, flash
 import os
 import requests
