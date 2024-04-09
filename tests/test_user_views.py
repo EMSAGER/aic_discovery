@@ -9,7 +9,7 @@ import os
 
 # run these tests like:
 #
-#    FLASK_ENV=production python3 -m unittest tests/test_app.py
+#    FLASK_ENV=production python3 -m unittest tests/test_user_views.py
 
 
 #set up the environmenta database
@@ -154,8 +154,21 @@ class UserViewTestCase(TestCase):
             self.assertEqual(res.status_code, 200)
             self.assertIn("Access unauthorized.", html)
 
-    def test_user_profile_edit(self):
-        """Testing the profile edit"""
+    def test_edit_profile(self):
+        """Ensure the edit profile routes work"""
+        with app.app_context():
+            with self.client as c:
+                with c.session_transaction() as sess:
+                    sess[CURR_USER_KEY] = self.u1.id
+                res = c.post('/users/profile', 
+                                data={"username" : "HUMBOLDTSQUIDDEATH",
+                                      "password" : "testuser",
+                                      'century_id': 2}, follow_redirects=True)
+                
+                html = res.get_data(as_text=True)
+
+                self.assertEqual(res.status_code, 200)
+                self.assertIn('Bob taco', html)
 
     def test_user_profile_edit_unauthorized(self):
         """Testing the profile edit without being logged in"""
