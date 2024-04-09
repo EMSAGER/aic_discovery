@@ -9,7 +9,7 @@ import os
 
 # run these tests like:
 #
-#    FLASK_ENV=production python3 -m unittest tests.test_app.py
+#    FLASK_ENV=production python3 -m unittest tests/test_app.py
 
 
 #set up the environmenta database
@@ -20,9 +20,7 @@ os.environ['DATABASE_URL'] = "postgresql:///test_aic_capstone"
 from app import app, CURR_USER_KEY
 
 app.config['WTF_CSRF_ENABLED'] = False
-# app.config['TESTING'] = True
-# app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-# app.config["SQLALCHEMY_ECHO"] = False
+
 
 class UserViewTestCase(TestCase):
     """Tests for user related routes"""
@@ -137,4 +135,34 @@ class UserViewTestCase(TestCase):
             self.assertEqual(res.status_code, 200)
             self.assertIn('Bob taco', html)
 
-    
+    def test_logout(self):
+        """tests the logout function of the application"""
+        with app.app_context():
+            with self.client as c:
+                res = c.get('/logout')
+                html = res.get_data(as_text=True)
+
+            self.assertEqual(res.status_code, 302)
+
+    def test_user_profile_access_unauthorized(self):
+        """Test accessing the user profile without being logged in"""
+        with app.app_context():
+            with self.client as c:
+                res = c.get('/users/profile', follow_redirects=True)
+                html = res.get_data(as_text=True)
+            
+            self.assertEqual(res.status_code, 200)
+            self.assertIn("Access unauthorized.", html)
+
+    def test_user_profile_edit(self):
+        """Testing the profile edit"""
+
+    def test_user_profile_edit_unauthorized(self):
+        """Testing the profile edit without being logged in"""
+        with app.app_context():
+            with self.client as c:
+                res = c.get('/users/profile', follow_redirects=True)
+                html = res.get_data(as_text=True)
+            
+            self.assertEqual(res.status_code, 200)
+            self.assertIn("Access unauthorized.", html)

@@ -159,9 +159,10 @@ def user_profile():
     """Returns the user's profile page
     This route will also communicate with the API server to pull an image filtered by the century picked"""
 
-    if not 'user' in g:
+    if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
+    
     user = g.user
 
     if request.method == 'POST':
