@@ -1,10 +1,5 @@
 from unittest import TestCase
-from flask import Flask
-from flask_debugtoolbar import DebugToolbarExtension
 from models import User, Century, db, Artwork
-# from sqlalchemy.exc import IntegrityError
-# from aic_app.api_requests import APIRequests
-# from aic_app.favoriting_Art import ArtworkFavorites
 import os
 
 # run these tests like:
@@ -106,7 +101,6 @@ class UserViewTestCase(TestCase):
 
             self.assertEqual(res.status_code, 200)
             self.assertIn('<a class="navbar-form" href="/users/profile/edit">Edit Profile</a>', html)
-            # self.assertIn('<h1 class="display-1 text-center">19th Century Art</h1>', html)
             self.assertIn('New User', html)
             
     
@@ -139,10 +133,11 @@ class UserViewTestCase(TestCase):
         """tests the logout function of the application"""
         with app.app_context():
             with self.client as c:
-                res = c.get('/logout')
+                res = c.get('/logout', follow_redirects=True)
                 html = res.get_data(as_text=True)
 
-            self.assertEqual(res.status_code, 302)
+                self.assertEqual(res.status_code, 200)
+                self.assertIn("<h2 class=\"join-message mb-4 display-3 text-center font-weight-bold\">Welcome back!</h2>", html)
 
     def test_user_profile_access_unauthorized(self):
         """Test accessing the user profile without being logged in"""
@@ -151,8 +146,8 @@ class UserViewTestCase(TestCase):
                 res = c.get('/users/profile', follow_redirects=True)
                 html = res.get_data(as_text=True)
             
-            self.assertEqual(res.status_code, 200)
-            self.assertIn("Access unauthorized.", html)
+                self.assertEqual(res.status_code, 200)
+                self.assertIn("Access unauthorized.", html)
 
     def test_edit_profile(self):
         """Ensure the edit profile routes work"""
@@ -177,5 +172,5 @@ class UserViewTestCase(TestCase):
                 res = c.get('/users/profile', follow_redirects=True)
                 html = res.get_data(as_text=True)
             
-            self.assertEqual(res.status_code, 200)
-            self.assertIn("Access unauthorized.", html)
+                self.assertEqual(res.status_code, 200)
+                self.assertIn("Access unauthorized.", html)
