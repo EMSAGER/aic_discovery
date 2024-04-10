@@ -1,10 +1,13 @@
+#tests model.py
+#tests the User Model
+
 from unittest import TestCase
-from models import User, Century, db, Artwork, Artist
+from models import User, Artist, Artwork, Favorite, Century, db
 import os
 
 # run these tests like:
 #
-#    FLASK_ENV=production python3 -m unittest tests/test_art_views.py
+#    FLASK_ENV=production python3 -m unittest tests/test_models_user.py
 
 
 #set up the environmenta database
@@ -16,8 +19,8 @@ from app import app, CURR_USER_KEY
 
 app.config['WTF_CSRF_ENABLED'] = False
 
-class ArtworkViewTestCase(TestCase):
-    """Tests for artwork related routes"""
+class ArtworkModelTestCase(TestCase):
+    """Tests for artwork model"""    """Tests for artwork related routes"""
     def setUp(self):
         """Create test client add sample data"""
         self.client = app.test_client()
@@ -38,6 +41,8 @@ class ArtworkViewTestCase(TestCase):
         User.query.delete()
         Century.query.delete()
         Artwork.query.delete()
+        Favorite.query.delete()
+        
         c_18 = Century(century_name="18th Century")
         db.session.add(c_18)
         db.session.commit()
@@ -47,15 +52,14 @@ class ArtworkViewTestCase(TestCase):
         db.session.add_all([Stacy, Allison])
         db.session.commit()
 
-        test_art_s = Artwork(title="Does Allison love Em more than queso?",
-                           artist_id=Stacy.id, 
-                           image_url = "https://chefsgarden-cdn-prod.azureedge.net/width-960-amp;height-420-amp;mode-crop-amp;-scale-both-amp;quality-80-cache-2-3/TheChefsGarden/media/TCG/Product-Detail-Images/Root/Potatoes/Potatoes-Sizing-Spoons.jpg")
-        
-        test_art_a = Artwork(title="Does Stacy love Em more than yellow octopus?",
-                           artist_id=Allison.id, 
-                           image_url = "https://chefsgarden-cdn-prod.azureedge.net/width-960-amp;height-420-amp;mode-crop-amp;-scale-both-amp;quality-80-cache-2-3/TheChefsGarden/media/TCG/Product-Detail-Images/Root/Potatoes/Potatoes-Sizing-Spoons.jpg")
+        self.test_art_s = Artwork(title="Does Allison love Em more than queso?",
+                                  artist_id=Stacy.id, 
+                                  image_url="https://example.com/art_s.jpg")
+        self.test_art_a = Artwork(title="Does Stacy love Em more than yellow octopus?",
+                                  artist_id=Allison.id, 
+                                  image_url="https://example.com/art_a.jpg")
 
-        db.session.add_all([test_art_s, test_art_a])
+        db.session.add_all([self.test_art_s, self.test_art_a])
         db.session.commit()
 
         self.u1 = User.signup(username="testpotato",
@@ -72,15 +76,3 @@ class ArtworkViewTestCase(TestCase):
         """Clean up any fouled transaction."""
         db.session.remove()
         db.drop_all()
-
-    def test_favorites_unauthorized(self):
-        """Test the favorites route without a logged-in user."""
-        with app.app_context():
-            with self.client as c:
-                res = c.get('/users/favorites', follow_redirects=True)
-                html = res.get_data(as_text=True)
-            
-                self.assertEqual(res.status_code, 200)
-                self.assertIn("Access unauthorized.", html)
-
-

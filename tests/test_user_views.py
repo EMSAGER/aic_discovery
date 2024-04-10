@@ -72,10 +72,9 @@ class UserViewTestCase(TestCase):
 
     def test_signup_route_get(self):
         """test the signup route -- get method"""
-        with app.app_context():
-            with self.client as c:
-                res = c.get('/signup')
-                html = res.get_data(as_text=True)
+        with self.client as c:
+            res = c.get('/signup')
+            html = res.get_data(as_text=True)
 
             self.assertEqual(res.status_code, 200)
             self.assertIn('name="username"', html)
@@ -87,17 +86,16 @@ class UserViewTestCase(TestCase):
     
     def test_signup_route_post(self):
         """test the signup route -- post method"""
-        with app.app_context():
-            with self.client as c:
-                res = c.post('/signup', data={
-                        'username': 'newuser',
-                        'password': 'password',
-                        'email': 'new@example.com',
-                        'first_name': 'New',
-                        'last_name': 'User',
-                        'century_id': 1
-                    }, follow_redirects=True)
-                html = res.get_data(as_text=True)
+        with self.client as c:
+            res = c.post('/signup', data={
+                    'username': 'newuser',
+                    'password': 'password',
+                    'email': 'new@example.com',
+                    'first_name': 'New',
+                    'last_name': 'User',
+                    'century_id': 1
+                }, follow_redirects=True)
+            html = res.get_data(as_text=True)
 
             self.assertEqual(res.status_code, 200)
             self.assertIn('<a class="navbar-form" href="/users/profile/edit">Edit Profile</a>', html)
@@ -106,10 +104,9 @@ class UserViewTestCase(TestCase):
     
     def test_login_get(self):
         """testing the login route -- get method"""
-        with app.app_context():
-            with self.client as c:
-                res = c.get('/login')
-                html = res.get_data(as_text=True)
+        with self.client as c:
+            res = c.get('/login')
+            html = res.get_data(as_text=True)
 
             self.assertEqual(res.status_code, 200)
             self.assertIn('name="username"', html)
@@ -118,59 +115,78 @@ class UserViewTestCase(TestCase):
 
     def test_login_post(self):
         """"Testing the login route -- POST method."""
-        with app.app_context():
-            with self.client as c:
-                res = c.post('/login', data={
-                    'username': "testpotato", 
-                    'password': "testuser"
-                    }, follow_redirects=True)
-                html = res.get_data(as_text=True)
+        with self.client as c:
+            res = c.post('/login', data={
+                'username': "testpotato", 
+                'password': "testuser"
+                }, follow_redirects=True)
+            html = res.get_data(as_text=True)
 
             self.assertEqual(res.status_code, 200)
             self.assertIn('Bob taco', html)
 
     def test_logout(self):
         """tests the logout function of the application"""
-        with app.app_context():
-            with self.client as c:
-                res = c.get('/logout', follow_redirects=True)
-                html = res.get_data(as_text=True)
+        with self.client as c:
+            res = c.get('/logout', follow_redirects=True)
+            html = res.get_data(as_text=True)
 
-                self.assertEqual(res.status_code, 200)
-                self.assertIn("<h2 class=\"join-message mb-4 display-3 text-center font-weight-bold\">Welcome back!</h2>", html)
+            self.assertEqual(res.status_code, 200)
+            self.assertIn("<h2 class=\"join-message mb-4 display-3 text-center font-weight-bold\">Welcome back!</h2>", html)
 
     def test_user_profile_access_unauthorized(self):
         """Test accessing the user profile without being logged in"""
-        with app.app_context():
-            with self.client as c:
-                res = c.get('/users/profile', follow_redirects=True)
-                html = res.get_data(as_text=True)
-            
-                self.assertEqual(res.status_code, 200)
-                self.assertIn("Access unauthorized.", html)
+        with self.client as c:
+            res = c.get('/users/profile', follow_redirects=True)
+            html = res.get_data(as_text=True)
+        
+            self.assertEqual(res.status_code, 200)
+            self.assertIn("Access unauthorized.", html)
 
     def test_edit_profile(self):
         """Ensure the edit profile routes work"""
-        with app.app_context():
-            with self.client as c:
-                with c.session_transaction() as sess:
-                    sess[CURR_USER_KEY] = self.u1.id
-                res = c.post('/users/profile', 
-                                data={"username" : "HUMBOLDTSQUIDDEATH",
-                                      "password" : "testuser",
-                                      'century_id': 2}, follow_redirects=True)
-                
-                html = res.get_data(as_text=True)
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u1.id
+            res = c.post('/users/profile', 
+                            data={"username" : "HUMBOLDTSQUIDDEATH",
+                                    "password" : "testuser",
+                                    'century_id': 2}, follow_redirects=True)
+            
+            html = res.get_data(as_text=True)
 
-                self.assertEqual(res.status_code, 200)
-                self.assertIn('Bob taco', html)
+            self.assertEqual(res.status_code, 200)
+            self.assertIn('Bob taco', html)
 
     def test_user_profile_edit_unauthorized(self):
         """Testing the profile edit without being logged in"""
-        with app.app_context():
-            with self.client as c:
-                res = c.get('/users/profile', follow_redirects=True)
-                html = res.get_data(as_text=True)
+        with self.client as c:
+            res = c.get('/users/profile', follow_redirects=True)
+            html = res.get_data(as_text=True)
+        
+            self.assertEqual(res.status_code, 200)
+            self.assertIn("Access unauthorized.", html)
+
+    def test_favorites_unauthorized(self):
+        """Test the favorites route without a logged-in user."""
+        with self.client as c:
+            res = c.get('/users/favorites', follow_redirects=True)
+            html = res.get_data(as_text=True)
+        
+            self.assertEqual(res.status_code, 200)
+            self.assertIn("Access unauthorized.", html)
+
+    def test_favorites_empty(self):
+        """Test the favorites route with a logged-in user."""
+        with self.client as c:
+            #simulate a login
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u1.id
             
-                self.assertEqual(res.status_code, 200)
-                self.assertIn("Access unauthorized.", html)
+            res = c.get('/users/favorites')
+            html = res.get_data(as_text=True)
+        
+            self.assertEqual(res.status_code, 200)
+                #this should be empty and contain NO images
+            self.assertIn("Favorites", html)
+            self.assertNotIn("<img class=\"card-img-top img-fluid img-fixed-height\" src=\"{{ artwork.image_url }}\" alt=\"{{ artwork.title }}\"><div class=\"card-body\">", html)

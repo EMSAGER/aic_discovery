@@ -4,7 +4,7 @@ import os
 
 # run these tests like:
 #
-#    FLASK_ENV=production python3 -m unittest tests/test_favoriting_Art.py
+#    FLASK_ENV=production python3 -m unittest tests/test_surprise.py
 
 
 #set up the environmenta database
@@ -16,8 +16,8 @@ from app import app, CURR_USER_KEY
 
 app.config['WTF_CSRF_ENABLED'] = False
 
-class ArtworkViewTestCase(TestCase):
-    """Tests for artwork related routes"""
+class SurpriseViewTestCase(TestCase):
+    """Tests for the surprise related routes"""
     def setUp(self):
         """Create test client add sample data"""
         self.client = app.test_client()
@@ -74,60 +74,56 @@ class ArtworkViewTestCase(TestCase):
         db.session.remove()
         db.drop_all()
 
-    def test_favorites_unauthorized(self):
-        """Test the favorites route without a logged-in user."""
+    def test_surprise_me_unauthorized(self):
+        """Test accessing Surprise Me route without logging in."""
         with self.client as c:
-                res = c.get('/users/favorites', follow_redirects=True)
-                html = res.get_data(as_text=True)
-            
-                self.assertEqual(res.status_code, 200)
-                self.assertIn("Access unauthorized.", html)
-
-    def test_favorites_empty(self):
-        """Test the favorites route with a logged-in user."""
+            res = self.client.get('/users/surprise', follow_redirects=True)
+            html = res.get_data(as_text=True)
+        
+            self.assertEqual(res.status_code, 200)
+            self.assertIn("Access unauthorized.", html)
+    
+    def test_suprise_me(self):
+        """test accessing Surprise Me route with a logged-in user."""
         with self.client as c:
                 #simulate a login
                 with c.session_transaction() as sess:
                     sess[CURR_USER_KEY] = self.u1.id
                 
-                res = c.get('/users/favorites')
+                res = c.get('/users/surprise')
                 html = res.get_data(as_text=True)
             
                 self.assertEqual(res.status_code, 200)
-                    #this should be empty and contain NO images
-                self.assertIn("Favorites", html)
-                self.assertNotIn("<img class=\"card-img-top img-fluid img-fixed-height\" src=\"{{ artwork.image_url }}\" alt=\"{{ artwork.title }}\"><div class=\"card-body\">", html)
-
-    def test_favorites_add(self):
-       """Test adding an artwork to favorites."""
-       with self.client as c:
+                self.assertIn("card surprise-artwork-card", html)
+    
+    def test_surprise_favorite(self):
+        """test accessing Surprise Me route with a logged-in user."""
+        with self.client as c:
                 #simulate a login
-                with c.session_transaction() as sess:
-                    sess[CURR_USER_KEY] = self.u1.id
-
-                
-                res = c.post('/users/profile', data={'artwork_id': self.test_art_s.id, 'action': 'favorite'}, follow_redirects=True)
-                html = res.get_data(as_text=True)
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u1.id
             
-                self.assertEqual(res.status_code, 200)
-                self.assertIn("18th Century", html)
+            res = c.post('/users/surprise', data={'artwork_id': self.test_art_s.id, 'action': 'favorite'}, follow_redirects=True)
+            html = res.get_data(as_text=True)
+        
+            self.assertEqual(res.status_code, 200)
+            self.assertIn("surprise-artwork", html)
 
-                favorite = Favorite.query.filter_by(user_id=self.u1.id, artwork_id=self.test_art_s.id).first()
-                self.assertIsNotNone(favorite)
+            favorite = Favorite.query.filter_by(artwork_id=self.test_art_s.id).first()
+            self.assertIsNotNone(favorite)
 
-    def test_unfavorites_add(self):
-       """Test adding an artwork to favorites."""
-       with self.client as c:
+    def test_surprise_not_favorite(self):
+        """test accessing Surprise Me route with a logged-in user."""
+        with self.client as c:
                 #simulate a login
-                with c.session_transaction() as sess:
-                    sess[CURR_USER_KEY] = self.u1.id
-
-                
-                res = c.post('/users/profile', data={'artwork_id': self.test_art_a.id, 'action': 'not_favorite'}, follow_redirects=True)
-                html = res.get_data(as_text=True)
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u1.id
             
-                self.assertEqual(res.status_code, 200)
-                self.assertIn("18th Century", html)
+            res = c.post('/users/surprise', data={'artwork_id': self.test_art_s.id, 'action': 'not_favorite'}, follow_redirects=True)
+            html = res.get_data(as_text=True)
+        
+            self.assertEqual(res.status_code, 200)
+            self.assertIn("surprise-artwork", html)
 
-                not_favorite = NotFavorite.query.filter_by(user_id=self.u1.id, artwork_id=self.test_art_s.id).first()
-                self.assertIsNone(not_favorite)
+            not_favorite = NotFavorite.query.filter_by(user_id=self.u1.id, artwork_id=self.test_art_s.id).first()
+            self.assertIsNone(not_favorite)
