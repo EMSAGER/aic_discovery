@@ -2,12 +2,12 @@
 #tests the User Model
 
 from unittest import TestCase
-from models import User, Artist, Artwork, Favorite, Century, db
+from models import User, Artist, Artwork, Favorite, Century, Classification, db
 import os
 
 # run these tests like:
 #
-#    FLASK_ENV=production python3 -m unittest tests/test_models_user.py
+#    FLASK_ENV=production python3 -m unittest tests/test_models_artwork.py
 
 
 #set up the environmenta database
@@ -20,7 +20,7 @@ from app import app, CURR_USER_KEY
 app.config['WTF_CSRF_ENABLED'] = False
 
 class ArtworkModelTestCase(TestCase):
-    """Tests for artwork model"""    """Tests for artwork related routes"""
+    """Tests for artwork model"""   
     def setUp(self):
         """Create test client add sample data"""
         self.client = app.test_client()
@@ -37,42 +37,30 @@ class ArtworkModelTestCase(TestCase):
         self.app_context.pop()
 
     def populate_db(self):
-        """Set up the db with the initial data - helper method"""
-        User.query.delete()
-        Century.query.delete()
+        """Clean up existing data and provide a fresh database before each test.""" 
         Artwork.query.delete()
-        Favorite.query.delete()
-        
-        c_18 = Century(century_name="18th Century")
-        db.session.add(c_18)
-        db.session.commit()
-
-        Stacy = Artist(artist_title="Stacy Smith", artist_display="TAAACOS")
-        Allison = Artist(artist_title="Allison Currie", artist_display="CRAWFISH")
-        db.session.add_all([Stacy, Allison])
-        db.session.commit()
-
-        self.test_art_s = Artwork(title="Does Allison love Em more than queso?",
-                                  artist_id=Stacy.id, 
-                                  image_url="https://example.com/art_s.jpg")
-        self.test_art_a = Artwork(title="Does Stacy love Em more than yellow octopus?",
-                                  artist_id=Allison.id, 
-                                  image_url="https://example.com/art_a.jpg")
-
-        db.session.add_all([self.test_art_s, self.test_art_a])
-        db.session.commit()
-
-        self.u1 = User.signup(username="testpotato",
-                              first_name="Bob",
-                              last_name="taco",
-                              email="test@test.com",
-                              password="testuser",
-                              century_id=c_18.id)
-        
-        db.session.add(self.u1)
+        Artist.query.delete()
+        # Create a sample artist for associating with artworks
+        self.artist = Artist(artist_title="Test Artist", artist_display="Sample biography")
+        db.session.add(self.artist)
         db.session.commit()
 
     def tearDown(self):
         """Clean up any fouled transaction."""
         db.session.remove()
         db.drop_all()
+
+    def test_artwork_creation(self):
+        """Test creating an artwork and verifying its properties."""
+        new_artwork = Artwork(title="Test Artwork", artist_id=self.artist.id, image_url="http://example.com/art.jpg")
+        db.session.add(new_artwork)
+        db.session.commit()
+
+        # Verify artwork was created and associated correctly
+        artwork = Artwork.query.first()
+        self.assertIsNotNone(artwork)
+        self.assertEqual(artwork.title, "Test Artwork")
+        self.assertEqual(artwork.artist_id, self.artist.id)
+        self.assertEqual(artwork.image_url, "http://example.com/art.jpg")
+        # Verify artist association
+        self.assertEqual(artwork.artist.artist_title, self.artist.artist_title)
