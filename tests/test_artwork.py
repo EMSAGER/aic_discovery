@@ -46,7 +46,7 @@ class TestSaveArtwork(TestCase):
         title="Seed Art",
         artist_id=artist.id,
         image_url="https://example.com/image.jpg",
-        id=1  # Make sure to add an ID here if your model doesn't auto-generate it
+        id=1  
     )
         db.session.add(artwork)
         db.session.commit()
