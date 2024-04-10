@@ -2,7 +2,6 @@
 #tests the code that saves artwork to the db or to a file
 
 import os
-import shutil
 from unittest import TestCase
 from unittest.mock import patch
 from models import db, Artwork, Artist
