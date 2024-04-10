@@ -6,7 +6,7 @@ from unittest import TestCase
 from unittest.mock import patch
 from models import db, Artwork, Artist
 from artwork import SaveArtwork
-from app import app, CURR_USER_KEY
+from app import app
 from flask import current_app
 
 app.config['WTF_CSRF_ENABLED'] = False

@@ -5,23 +5,24 @@
 #tests the code that saves artwork to the db or to a file
 
 import os
-import shutil
+
 from unittest import TestCase
-from unittest.mock import patch
-from models import db, Artwork, Artist
-from artwork import SaveArtwork
+from unittest.mock import patch, MagicMock
+from api_requests import APIRequests
+from models import db, User, Century, Favorite, NotFavorite
 from app import app, CURR_USER_KEY
 from flask import current_app
 
 app.config['WTF_CSRF_ENABLED'] = False
 os.environ['DATABASE_URL'] = "postgresql:///test_aic_capstone"
 
+
 # run these tests like:
 #
-#    FLASK_ENV=production python3 -m unittest tests/test_artwork.py
+#    FLASK_ENV=production python3 -m unittest tests/test_api_requests.py
 
-class TestSaveArtwork(TestCase):
-    """Tests the Save Artwork Class and its properties"""
+class TestAPIRequests(TestCase):
+    """Tests the APIRequests Class and its properties"""
     def setUp(self):
         """Create test client add sample data"""
         self.client = app.test_client()
@@ -30,7 +31,6 @@ class TestSaveArtwork(TestCase):
         db.create_all()
         self.populate_db()
         
-       
     def tearDown(self):
         """Clean up any fouled transaction."""
         db.session.remove()
@@ -38,121 +38,63 @@ class TestSaveArtwork(TestCase):
         self.app_context.pop()
 
     def populate_db(self):
-        """Clean up existing data and provide a fresh database before each test.""" 
-        Artwork.query.delete()
-        Artist.query.delete()
-        #create a sample
-        artist = Artist(artist_title="Test Artist")
-        db.session.add(artist)
+        """Runs before each test"""
+        Favorite.query.delete()
+        NotFavorite.query.delete()
+
+        user = User(
+            username='testuser',
+            password='testpassword',
+            email='test@example.com',
+            first_name='Test',
+            last_name='User',
+            century_id=1
+        )
+        century = Century(century_name='19th Century', id=1)
+        db.session.add_all([user, century])
         db.session.commit()
 
-        artwork = Artwork(
-        title="Seed Art",
-        artist_id=artist.id,
-        image_url="https://example.com/image.jpg",
-        id=1  # Make sure to add an ID here if your model doesn't auto-generate it
-    )
-        db.session.add(artwork)
-        db.session.commit()
+        self.user_id = user.id
 
-        self.artist = artist
-        self.artwork = artwork
 
-    def test_save_artwork_creates_new(self):
-        """Test saving a new artowrk correctly updates the database"""
-        artist_title = "Test Artist"
-        artwork_detail = {
-            'id': 1,
-            'title': "Test Artwork",
-            'artist_title': artist_title,
-            'date_start': 1900,
-            'date_end': 2000,
-            'medium_display': "Oil on Canvas",
-            'dimensions': "200x300",
-            'image_id': "test_image_id",
-            'image_url': "http://example.com/image.jpg"
+    @patch('api_requests.requests.get')
+    def test_get_artworks(self, mock_get):
+        """Test get_artworks with mocked API response"""
+        mock_response = {
+            "data": [
+                # Mock data structure as expected from API
+                {
+                    "id": 1, 
+                    "title": "Test Artwork", 
+                    "artist_title": "Test Artist", 
+                    'date_start': 1902,
+                    'date_end': 2002,
+                    'medium_display': "Watercolor",
+                    'dimensions': "100x150",
+                    'image_id': "second_test_image_id",
+                    'image_url': "http://example.com/second_image.jpg"}
+            ]
         }
-
-        res = SaveArtwork.save_artwork(artwork_detail)
-
-        self.assertIsNotNone(res)
-        self.assertEqual(Artwork.query.count(),1)
-        self.assertEqual(Artist.query.count(), 1)
-        self.assertEqual(Artwork.query.first().title, artwork_detail['title'])
-        self.assertEqual(Artist.query.first().artist_title, artist_title)
-
-    def test_update_existing_artwork(self):
-        """Test updating an existing artwork."""
-        # First, create an artwork
-        self.test_save_artwork_creates_new()
-        # Then, update the artwork with new details
-        artwork_update = {
-            'id': 1,
-            'title': "Updated Test Artwork",
-            'artist_title': "Test Artist",
-            'date_start': 1901,
-            'date_end': 2001,
-            'medium_display': "Updated Medium",
-            'dimensions': "200x301",
-            'image_id': "updated_test_image_id",
-            'image_url': "http://example.com/updated_image.jpg"
-        }
-        SaveArtwork.save_artwork(artwork_update)
-        updated_artwork = Artwork.query.get(1)
-        self.assertEqual(updated_artwork.title, "Updated Test Artwork")
-
-    def test_save_artwork_with_existing_artist(self):
-        """Test saving an artwork with an existing artist."""
-        # Ensure an artist exists
-        self.test_save_artwork_creates_new()
-        # Create new artwork with the same artist
-        new_artwork_detail = {
-            'id': 2,
-            'title': "Second Test Artwork",
-            'artist_title': "Test Artist",  # Same artist
-            'date_start': 1902,
-            'date_end': 2002,
-            'medium_display': "Watercolor",
-            'dimensions': "100x150",
-            'image_id': "second_test_image_id",
-            'image_url': "http://example.com/second_image.jpg"
-        }
-
-        SaveArtwork.save_artwork(new_artwork_detail)
+        # Set up the mock_get response
+        mock_get.return_value.json.return_value = mock_response
+        mock_get.return_value.status_code = 200
+      
+        # Retrieve the user object from the database
+        user = User.query.get(self.user_id)
         
-        self.assertEqual(Artwork.query.count(), 2)
-        self.assertEqual(Artist.query.count(), 1)
-
-    def test_save_image_file(self):
-        """Testing downloading and image from the image_url and saving it the static file"""
-        #mock the `requests.get` method & return a mock response with status code 200 & mock the flash
-        with patch('artwork.requests.get') as mock_get, patch('artwork.flash') as mock_flash:
-            #configure the mock to return a response with a succesful status code & binary
-            mock_get.return_value.status_code = 200
-            mock_get.return_value.content = b'test_image_content'
-
-            #title & image_id to use for testing
-            title = self.artwork.title
-            image_id = self.artwork.image_id
-            image_url = self.artwork.image_url
-
-            # Ensure the test_images subfolder exists within the static folder
-            TEST_IMAGES_SUBFOLDER = 'test_images'
-            TEST_IMAGES_DIR = os.path.join(current_app.static_folder, TEST_IMAGES_SUBFOLDER)
-            os.makedirs(TEST_IMAGES_DIR, exist_ok=True) 
-
-            # Call the save_image_file method
-            SaveArtwork.save_image_file(image_url, image_id, title)
-
-            # Build the file path
-            test_image_path = os.path.join(TEST_IMAGES_DIR, f"{title.replace(' ', '_')}_{image_id}.jpg")
-
+        # Pass the user object to get_artworks
+        res = APIRequests.get_artworks(user)
+       
+        # Assertions about the response
+        self.assertEqual(len(res), len(mock_response['data']))
+        for artwork_data, expected in zip(res, mock_response['data']):
+            self.assertEqual(artwork_data.id, expected['id'])
+            self.assertEqual(artwork_data.title, expected['title'])
             
-            #assert taht the file was created
-            self.assertTrue(os.path.exists(TEST_IMAGES_DIR))
 
-            if os.path.exists(test_image_path):
-                os.remove(test_image_path)
-
-            #assert the flash occurred
-            mock_flash.assert_called_with("Images successfully saved.", "success")
+        # Assert that the API was called with the correct URL and headers
+        mock_get.assert_called_with(
+            APIRequests.API_URL,
+            headers=APIRequests.HEADER,
+            params={'limit': 100, 'page': 1, 'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display'}
+        )

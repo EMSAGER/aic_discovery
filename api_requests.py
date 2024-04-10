@@ -29,6 +29,8 @@ class APIRequests:
         total_art_for_app = 50
         art_fetched = 0
         page = 1
+        favorite_artwork_ids = [fav.artwork_id for fav in Favorite.query.filter_by(user_id=user.id).all()]
+        not_favorite_artwork_ids = [not_fav.artwork_id for not_fav in NotFavorite.query.filter_by(user_id=user.id).all()]
         saved_artworks = []
         while art_fetched < total_art_for_app:
             query_params = {
@@ -39,13 +41,15 @@ class APIRequests:
             
             try:
                 response = requests.get(cls.API_URL, headers=cls.HEADER, params=query_params)
+               
                 if response.status_code == 200:
                     res_data = response.json()
                     artworks = res_data.get('data', [])
-                    favorite_artwork_ids = [fav.artwork_id for fav in Favorite.query.filter_by(user_id=user.id).all()]
-                    not_favorite_artwork_ids = [not_fav.artwork_id for not_fav in NotFavorite.query.filter_by(user_id=user.id).all()]
+                   
                     
                     artworks_details = cls.filter_artworks(artworks, favorite_artwork_ids, not_favorite_artwork_ids, date_range)
+                    if not artworks_details:
+                        break
                     for artwork in artworks_details:
                         if art_fetched >= total_art_for_app:
                             break
@@ -128,8 +132,7 @@ class APIRequests:
                     date_end = int(artwork.get('date_end', 0))
                     date_range_start, date_range_end = map(int, date_range)
                     
-                    if date_range_start <= date_start <= date_range_end or date_range_start <= date_end <= date_range_end:
-                        if artwork['id'] not in favorite_artwork_ids and artwork['id'] not in not_favorite_artwork_ids:
+                    if (date_range_start <= date_start <= date_range_end or date_range_start <= date_end <= date_range_end) and artwork['id'] not in favorite_artwork_ids and artwork['id'] not in not_favorite_artwork_ids:
                             artworks_details.append({
                                 'id' : artwork.get('id'),
                                 'title': artwork.get('title'),
