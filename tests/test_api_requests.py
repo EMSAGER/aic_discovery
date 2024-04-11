@@ -71,8 +71,11 @@ class TestAPIRequests(TestCase):
 
         test_art_s = Artwork(id=1, title="Yellow Octopus",artist_id=stacy.id, date_start=2020, date_end=2021, medium_display="coffee", image_id="yellowoctopus", image_url="www.testoctopus.jpg")
         test_art_a = Artwork(id=2, title="Cajun Red Panda", artist_id=allison.id, date_start=2020, date_end=2021, medium_display="crawfish", image_id="cajunredpanda", image_url="www.sample.jpg")
-        db.session.add_all([test_art_a, test_art_s])
+        test_art_f = Artwork(id=3, title="Cajun Red Panda Duex", artist_id=allison.id, date_start=2020, date_end=2021, medium_display="crawfish and mardi gras beads", image_id="cajunredpandaz", image_url="www.sample.jpg")
+        db.session.add_all([test_art_a, test_art_s, test_art_f])
         db.session.commit()
+
+
 
 
         favorite = Favorite(id=1, user_id=user.id, artist_id=1, artwork_id=test_art_s.id)
@@ -85,10 +88,11 @@ class TestAPIRequests(TestCase):
         self.allison = allison
         self.test_art_s = test_art_s
         self.test_art_a = test_art_a
+        self.test_art_f = test_art_f
         self.favorite = favorite
         self.not_favorite = not_favorite
         self.date_range = (2000, 2100)
-        self.artwork = {self.test_art_a, self.test_art_s}
+        
         
 
 
@@ -141,14 +145,22 @@ class TestAPIRequests(TestCase):
         # Mock the favorite and not favorite artwork IDs
         mock_fav_query.filter_by.return_value.all.return_value = [MagicMock(spec=Favorite, artwork_id=1)]
         mock_not_fav_query.filter_by.return_value.all.return_value = [MagicMock(spec=NotFavorite, artwork_id=2)]
+
+        # Create a list of artwork instances for the test
+        artworks = [self.test_art_s, self.test_art_a, self.test_art_f]
+
+        # Lists of IDs to simulate what should be returned from actual database queries
+        favorite_ids = [fav.artwork_id for fav in mock_fav_query.filter_by.return_value.all()]
+        not_favorite_ids = [not_fav.artwork_id for not_fav in mock_not_fav_query.filter_by.return_value.all()]
+
          # Call the filter_artworks class method
         filtered_artworks = APIRequests.filter_artworks(
-            self.artwork, 
-            self.favorite, 
-            self.not_favorite, 
+            artworks, 
+            favorite_ids, 
+            not_favorite_ids, 
             self.date_range
         )
 
         # Assertions to verify the correct filtering of artworks
         self.assertEqual(len(filtered_artworks), 1)  # Only one artwork should match the criteria
-        self.assertEqual(filtered_artworks[0]['id'], 1)  # Verify the ID of the artwork returned
+        self.assertEqual(filtered_artworks[0]['id'], self.test_art_f.id)  # Verify the ID of the artwork returned

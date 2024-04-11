@@ -139,7 +139,6 @@ class APIRequests:
                     'artist_display': artwork.artist_display,
                     'date_start': artwork.date_start,
                     'date_end': artwork.date_end,
-                    'date_display': artwork.date_display(),
                     'medium_display': artwork.medium_display,
                     'dimensions': artwork.dimensions,
                     'image_id': artwork.image_id,
