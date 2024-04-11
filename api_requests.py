@@ -126,24 +126,25 @@ class APIRequests:
         
     @classmethod
     def filter_artworks(cls, artworks, favorite_artwork_ids, not_favorite_artwork_ids, date_range):
-                artworks_details = []
-                for artwork in artworks:
-                    date_start = int(artwork.get('date_start', 0))
-                    date_end = int(artwork.get('date_end', 0))
-                    date_range_start, date_range_end = map(int, date_range)
+        """this class method will filter the artwork so that only the images that are not favorited or unliked and within the date range will be shown"""
+        artworks_details = []
+        for artwork in artworks:
+            #check if artwork is within the date range and is NOT favorited or unfavorited
+            if (date_range[0] <= artwork.date_start <= date_range[1] or date_range[0] <= artwork.date_end <= date_range[1]) and \
+            artwork.id not in favorite_artwork_ids and artwork.id not in not_favorite_artwork_ids:
+                artwork_detail = {
+                    'id': artwork.id,
+                    'title': artwork.title,
+                    'artist_title': artwork.artist_title,
+                    'artist_display': artwork.artist_display,
+                    'date_start': artwork.date_start,
+                    'date_end': artwork.date_end,
+                    'date_display': artwork.date_display(),
+                    'medium_display': artwork.medium_display,
+                    'dimensions': artwork.dimensions,
+                    'image_id': artwork.image_id,
+                    'image_url': artwork.image_url
+                }
+                artworks_details.append(artwork_detail)
+        return artworks_details
                     
-                    if (date_range_start <= date_start <= date_range_end or date_range_start <= date_end <= date_range_end) and artwork['id'] not in favorite_artwork_ids and artwork['id'] not in not_favorite_artwork_ids:
-                            artworks_details.append({
-                                'id' : artwork.get('id'),
-                                'title': artwork.get('title'),
-                                'artist_title': artwork.get('artist_title', 'Unknown Artist'),
-                                'artist_display': artwork.get('artist_display', ''),
-                                'date_start': artwork.get('date_start', ''),
-                                'date_end': artwork.get('date_end', ''),
-                                'date_display': artwork.get('date_display', ''),
-                                'medium_display': artwork.get('medium_display', ''),
-                                'dimensions': artwork.get('dimensions', ''),
-                                'image_id': artwork.get('image_id'),
-                                'image_url': f"https://www.artic.edu/iiif/2/{artwork['image_id']}/full/843,/0/default.jpg" if artwork.get('image_id') else None
-                            })
-                return artworks_details 
