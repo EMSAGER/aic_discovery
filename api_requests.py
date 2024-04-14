@@ -1,10 +1,11 @@
+
 #user -- century
 #favorite & not favorite artowrk
 ###this should handle the response requests
 import requests
 import random
 from flask import flash
-from models import Favorite, NotFavorite, Century
+from models import Favorite, NotFavorite, Century, Artwork
 from artwork import SaveArtwork
 
 save_artwork = SaveArtwork.save_artwork
@@ -17,10 +18,11 @@ class APIRequests:
         'AIC-User-Agent': 'AIC Discovery (emsager7@gmail.com)'
     }
     century_dates ={
-        '18th Century': ('1700', '1799'),
-        '19th Century': ('1800', '1899'),
-        '20th Century': ('1900', '1999'),
+        '18th Century': (1700, 1799),
+        '19th Century': (1800, 1899),
+        '20th Century': (1900, 1999),
     }
+
     
     @classmethod
     def get_artworks(cls, user):
@@ -129,16 +131,21 @@ class APIRequests:
         """this class method will filter the artwork so that only the images that are not favorited or unliked and within the date range will be shown"""
         artworks_details = []
         for artwork in artworks:
+            new_art = Artwork.query.get(artwork.id)
+            date_start = int(new_art.date_start)
+            date_end = int(new_art.date_end) 
+
             #check if artwork is within the date range and is NOT favorited or unfavorited
-            if (date_range[0] <= artwork.date_start <= date_range[1] or date_range[0] <= artwork.date_end <= date_range[1]) and \
-            artwork.id not in favorite_artwork_ids and artwork.id not in not_favorite_artwork_ids:
+            
+            if ((date_range[0] <= date_start <= date_range[1]) or (date_range[0] <= date_end <= date_range[1])) and \
+            (artwork.id not in favorite_artwork_ids) and (artwork.id not in not_favorite_artwork_ids):
                 artwork_detail = {
                     'id': artwork.id,
                     'title': artwork.title,
-                    'artist_title': artwork.artist_title,
+                    'artist_title': artwork.artist.artist_title if artwork.artist else 'Unknown Artist',
                     'artist_display': artwork.artist_display,
-                    'date_start': artwork.date_start,
-                    'date_end': artwork.date_end,
+                    'date_start': date_start,
+                    'date_end': date_end,
                     'medium_display': artwork.medium_display,
                     'dimensions': artwork.dimensions,
                     'image_id': artwork.image_id,
