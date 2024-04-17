@@ -13,6 +13,13 @@ from api_requests import APIRequests
 from models import db, User, Century, Favorite, NotFavorite, Artwork, Artist
 from app import app, CURR_USER_KEY
 from flask import current_app
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.WARNING)  # Set to WARNING to reduce output, or ERROR to make it even less verbose
+
+# Adjust logging level for SQLAlchemy specifically if needed
+logging.getLogger('sqlalchemy.engine').setLevel(logging.CRITICAL)
 
 app.config['WTF_CSRF_ENABLED'] = False
 os.environ['DATABASE_URL'] = "postgresql:///test_aic_capstone"
@@ -80,63 +87,48 @@ class TestAPIRequests(TestCase):
         not_favorite = NotFavorite(id=2, user_id=user.id, artist_id=2, artwork_id=test_art_a.id)
         db.session.add_all([favorite, not_favorite])
         db.session.commit()
-
-        self.user_id = user.id
-        self.stacy = stacy
-        self.allison = allison
+        
         self.test_art_s = test_art_s
         self.test_art_a = test_art_a
         self.test_art_f = test_art_f
-        self.favorite = favorite
-        self.not_favorite = not_favorite
-        self.date_range = (2000, 2100)
-        
-    # @patch('api_requests.requests.get')
-    # def test_get_artworks(self, mock_get):
-    #     """Test get_artworks with mocked API response"""
-    #     mock_response = {
-    #         "data": [
-    #             {
-    #                 "id": 1, 
-    #                 "title": "Test Artwork", 
-    #                 "artist_title": "Test Artist", 
-    #                 'date_start': 1902,
-    #                 'date_end': 2002,
-    #                 'medium_display': "Watercolor",
-    #                 'dimensions': "100x150",
-    #                 'image_id': "second_test_image_id",
-    #                 'image_url': "http://example.com/second_image.jpg"
-    #             }
-    #         ]
-    #     }
-    #     # Set up the mock_get response
-    #     mock_get.return_value.json.return_value = mock_response
-    #     mock_get.return_value.status_code = 200
+        self.date_range = ("2000" , "2099")
+        self.user = user
+
+    @patch('api_requests.requests.get')
+    def test_get_artworks(self, mock_get):
+        """Test get_artworks with mocked API response"""
+        mock_response = {
+            "data": [
+                {
+                    "id": 1, 
+                    "title": "Test Artwork", 
+                    "artist_id": 1, 
+                    'date_start': 2002,
+                    'date_end': 2002,
+                    'medium_display': "Watercolor",
+                    'dimensions': "100x150",
+                    'image_id': "second_test_image_id",
+                    'image_url': "http://example.com/second_image.jpg"
+                }
+            ]
+        }
+        # Set up the mock_get response
+        mock_get.return_value.json.return_value = mock_response
+        mock_get.return_value.status_code = 200
     
-    #     # Retrieve the user object from the database
-    #     user = User.query.get(self.user_id)
-        
-    #     # Create an instance of APIRequests
-    #     api_requests = APIRequests()
-
-    #     # Pass the user object to get_artworks on the instance
-    #     res = api_requests.get_artworks(user)
+        # Pass the user object to get_artworks on the instance
+        res = APIRequests.get_artworks(self.user)
     
-    #     # Assertions about the response
-    #     self.assertEqual(len(res), len(mock_response['data']))
-    #     for artwork_data, expected in zip(res, mock_response['data']):
-    #         self.assertEqual(artwork_data.id, expected['id'])
-    #         self.assertEqual(artwork_data.title, expected['title'])
-            
+        # Assertions about the response
+        self.assertIsInstance(res, list)
+        self.assertEqual(len(res), 1)
+        self.assertEqual(res[0]['title'], "Test Artwork")
 
-    #     # Assert that the API was called with the correct URL and headers
-    #     mock_get.assert_called_with(
-    #         APIRequests.API_URL,
-    #         headers=APIRequests.HEADER,
-    #         params={'limit': 100, 'page': 1, 'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display'}
-    #     )
-
-
+        mock_get.assert_called_once_with(
+            APIRequests.API_URL,
+            headers=APIRequests.HEADER,
+            params={'limit': 100, 'page': 1, 'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_start,date_end, artist_display', 'query': {'date_start': {'gte': '2000'}, 'date_end': {'lte': '2099'}}}
+    )
 
     @patch('api_requests.Favorite.query')
     @patch('api_requests.NotFavorite.query')
@@ -162,7 +154,10 @@ class TestAPIRequests(TestCase):
         )
 
         # Assertions to verify the correct filtering of artworks
-        self.assertEqual(len(filtered_artworks), 1)  # Only one artwork should match the criteria
+        # Only one artwork should match the criteria
+        self.assertEqual(len(filtered_artworks), 1)  
         self.assertEqual(filtered_artworks[0]['id'], self.test_art_f.id)
-        self.assertEqual(favorite_ids, [1]) #test the favorite.artwork.id is correct
-        self.assertEqual(not_favorite_ids, [2]) #test the not_favorite.artwork.id
+        #test the favorite.artwork.id is correct
+        self.assertEqual(favorite_ids, [1])
+        #test the not_favorite.artwork.id
+        self.assertEqual(not_favorite_ids, [2]) 

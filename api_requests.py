@@ -1,11 +1,10 @@
-
 #user -- century
 #favorite & not favorite artowrk
 ###this should handle the response requests
 import requests
 import random
 from flask import flash
-from models import Favorite, NotFavorite, Century, Artwork
+from models import Favorite, NotFavorite, Century
 from artwork import SaveArtwork
 
 save_artwork = SaveArtwork.save_artwork
@@ -18,11 +17,10 @@ class APIRequests:
         'AIC-User-Agent': 'AIC Discovery (emsager7@gmail.com)'
     }
     century_dates ={
-        '18th Century': (1700, 1799),
-        '19th Century': (1800, 1899),
-        '20th Century': (1900, 1999),
+        '18th Century': ('1700', '1799'),
+        '19th Century': ('1800', '1899'),
+        '20th Century': ('1900', '1999'),
     }
-
     
     @classmethod
     def get_artworks(cls, user):
@@ -128,29 +126,29 @@ class APIRequests:
         
     @classmethod
     def filter_artworks(cls, artworks, favorite_artwork_ids, not_favorite_artwork_ids, date_range):
-        """this class method will filter the artwork so that only the images that are not favorited or unliked and within the date range will be shown"""
         artworks_details = []
+        date_range_start, date_range_end = map(int, date_range) 
+        
         for artwork in artworks:
-            new_art = Artwork.query.get(artwork.id)
-            date_start = int(new_art.date_start)
-            date_end = int(new_art.date_end) 
-
-            #check if artwork is within the date range and is NOT favorited or unfavorited
+            #this is an ORM, need to use the getattr to call upon the object
+            date_start = int(getattr(artwork, 'date_start', 0))
+            date_end = int(getattr(artwork, 'date_end', 0))
+            artwork_id = getattr(artwork, 'id', None)
             
-            if ((date_range[0] <= date_start <= date_range[1]) or (date_range[0] <= date_end <= date_range[1])) and \
-            (artwork.id not in favorite_artwork_ids) and (artwork.id not in not_favorite_artwork_ids):
-                artwork_detail = {
-                    'id': artwork.id,
-                    'title': artwork.title,
-                    'artist_title': artwork.artist.artist_title if artwork.artist else 'Unknown Artist',
-                    'artist_display': artwork.artist_display,
-                    'date_start': date_start,
-                    'date_end': date_end,
-                    'medium_display': artwork.medium_display,
-                    'dimensions': artwork.dimensions,
-                    'image_id': artwork.image_id,
-                    'image_url': artwork.image_url
-                }
-                artworks_details.append(artwork_detail)
+            
+            if date_range_start <= date_start <= date_range_end or date_range_start <= date_end <= date_range_end:
+                if artwork_id not in favorite_artwork_ids and artwork_id not in not_favorite_artwork_ids:
+                    artworks_details.append({
+                        'id': artwork_id,
+                        'title': getattr(artwork, 'title', ''),
+                        'artist_title': getattr(artwork, 'artist_title', 'Unknown Artist'),
+                        'artist_display': getattr(artwork, 'artist_display', ''),
+                        'date_start': getattr(artwork, 'date_start', ''),
+                        'date_end': getattr(artwork, 'date_end', ''),
+                        'date_display': getattr(artwork, 'date_display', ''),
+                        'medium_display': getattr(artwork, 'medium_display', ''),
+                        'dimensions': getattr(artwork, 'dimensions', ''),
+                        'image_id': getattr(artwork, 'image_id'),
+                        'image_url': f"https://www.artic.edu/iiif/2/{getattr(artwork, 'image_id')}/full/843,/0/default.jpg"
+                    })
         return artworks_details
-                    

@@ -70,8 +70,9 @@ class SaveArtwork:
             res = requests.get(image_url)
             if res.status_code == 200:
                 #write the image data to a new file
-                with open(image_path, 'wb') as image_file:
-                    image_file.write(res.content)
-                    flash("Images successfully saved.", "success")
+                if not os.path.exists(image_path):
+                    with open(image_path, 'wb') as image_file:
+                        image_file.write(res.content)
+                        flash("Images successfully saved.", "success")
         except Exception as e:
             flash("Failed to download image", "danger")

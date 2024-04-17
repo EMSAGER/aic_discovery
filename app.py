@@ -43,7 +43,7 @@ def initialize_app():
     """initiailiaze application & create necessary directories"""
     
     create_directories()
-    initialize_centuries()
+    # initialize_centuries()
     add_user_to_g()
     
 
@@ -61,9 +61,8 @@ def create_directories():
     if not os.path.exists(IMAGES_DIR_PATH):
         os.makedirs(IMAGES_DIR_PATH)
 
-def do_login(user):
+def login_user(user):
     """Log in user."""
-
     session[CURR_USER_KEY] = user.id
 
 
@@ -98,7 +97,7 @@ def signup():
     If the there already is a user with that username: flash message
     and re-present form.
     """
-    # initialize_centuries()
+    initialize_centuries()
     form = UserForm()
     form.century_id.choices = [(c.id, c.century_name)for c in Century.query.order_by('id')]
     if form.validate_on_submit():
@@ -113,7 +112,7 @@ def signup():
             )
             db.session.add(user)
             db.session.commit()
-            do_login(user)
+            login_user(user)
             # flash("User successfully registered.", 'success')
             return redirect('/users/profile') 
         
@@ -134,7 +133,7 @@ def login():
                                  form.password.data)
 
         if user:
-            do_login(user)
+            login_user(user)
             # flash(f"Hello, {user.full_name}!", "success")
             return redirect("/users/profile")
 
