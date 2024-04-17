@@ -8,11 +8,10 @@
 import os
 
 from unittest import TestCase
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 from api_requests import APIRequests
 from models import db, User, Century, Favorite, NotFavorite, Artwork, Artist
 from app import app, CURR_USER_KEY
-from flask import current_app
 import logging
 
 # Set up logging
@@ -55,7 +54,7 @@ class TestAPIRequests(TestCase):
         Artwork.query.delete()
     
         #order of commiting is necessary
-        century = Century(century_name='19th Century', id=1)
+        century = Century(id=1, century_name='19th Century')
         db.session.add(century)
         db.session.commit()
         #user references century, so commit century prior to user
@@ -77,9 +76,9 @@ class TestAPIRequests(TestCase):
         db.session.commit()
 
 
-        test_art_s = Artwork(id=1, title="Yellow Octopus",artist_id=stacy.id, date_start=2020, date_end=2021, medium_display="coffee", image_id="yellowoctopus", image_url="www.testoctopus.jpg")
-        test_art_a = Artwork(id=2, title="Cajun Red Panda", artist_id=allison.id, date_start=2020, date_end=2021, medium_display="crawfish", image_id="cajunredpanda", image_url="www.sample.jpg")
-        test_art_f = Artwork(id=3, title="Cajun Red Panda Duex", artist_id=allison.id, date_start=2020, date_end=2021, medium_display="crawfish and mardi gras beads", image_id="cajunredpandaz", image_url="www.sample.jpg")
+        test_art_s = Artwork(id=1, title="Yellow Octopus",artist_id=stacy.id, date_start=1820, date_end=1821, medium_display="coffee", image_id="yellowoctopus", image_url="www.testoctopus.jpg")
+        test_art_a = Artwork(id=2, title="Cajun Red Panda", artist_id=allison.id, date_start=1820, date_end=1821, medium_display="crawfish", image_id="cajunredpanda", image_url="www.sample.jpg")
+        test_art_f = Artwork(id=3, title="Cajun Red Panda Duex", artist_id=allison.id, date_start=1820, date_end=1821, medium_display="crawfish and mardi gras beads", image_id="cajunredpandaz", image_url="www.sample.jpg")
         db.session.add_all([test_art_a, test_art_s, test_art_f])
         db.session.commit()
 
@@ -87,12 +86,31 @@ class TestAPIRequests(TestCase):
         not_favorite = NotFavorite(id=2, user_id=user.id, artist_id=2, artwork_id=test_art_a.id)
         db.session.add_all([favorite, not_favorite])
         db.session.commit()
+
+        self.mock_api_response = {
+            'data': [{
+            'id': 4,
+            'title': "The Great taco cat",
+            'artist_title': "Neri Gomez-Brahm",
+            'image_id': "mi sobrino es guapo",
+            'dimensions': '100x100',
+            'medium_display': 'guacomole',
+            'date_display': '1880',
+            'date_start': 1880,
+            'date_end': 1885,
+            'artist_display': "Neri is the best",
+            'image_url': f'http://tacooooos.jpg'
+        }for i in range(50)]
+        }
         
         self.test_art_s = test_art_s
         self.test_art_a = test_art_a
         self.test_art_f = test_art_f
-        self.date_range = ("2000" , "2099")
+        self.date_range = ("1800" , "1899")
         self.user = user
+        self.favorite = favorite
+        self.not_favorite = not_favorite
+        self.century = century
 
     @patch('api_requests.requests.get')
     def test_get_artworks(self, mock_get):
@@ -101,63 +119,89 @@ class TestAPIRequests(TestCase):
             "data": [
                 {
                     "id": 1, 
-                    "title": "Test Artwork", 
-                    "artist_id": 1, 
-                    'date_start': 2002,
-                    'date_end': 2002,
-                    'medium_display': "Watercolor",
+                    "title": "Yellow Octopus", 
+                    "artist_title": "Stacy Smith", 
+                    'date_start': 1820,
+                    'date_end': 1821,
+                    'medium_display': "coffee",
                     'dimensions': "100x150",
-                    'image_id': "second_test_image_id",
-                    'image_url': "http://example.com/second_image.jpg"
-                }
-            ]
+                    'image_id': "yellowoctopus",
+                    'image_url': "http://example.com/yellowoctopus.jpg"
+                } for i in range(10) #Making math easy -- each call recievees 10 items
+            ] 
         }
         # Set up the mock_get response
-        mock_get.return_value.json.return_value = mock_response
         mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = mock_response
     
-        # Pass the user object to get_artworks on the instance
-        res = APIRequests.get_artworks(self.user)
-    
-        # Assertions about the response
-        self.assertIsInstance(res, list)
-        self.assertEqual(len(res), 1)
-        self.assertEqual(res[0]['title'], "Test Artwork")
-
-        mock_get.assert_called_once_with(
-            APIRequests.API_URL,
-            headers=APIRequests.HEADER,
-            params={'limit': 100, 'page': 1, 'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_start,date_end, artist_display', 'query': {'date_start': {'gte': '2000'}, 'date_end': {'lte': '2099'}}}
-    )
-
+        # simulate getting all needed artowrks within 5 API calls
+        artworks = APIRequests.get_artworks(self.user)
+        
+        
+        self.assertEqual(len(artworks), 50) #equally the amount wanted
+        self.assertTrue(mock_get.call_count <= 6) #ensure not too many calls are sent
+        self.assertEqual(artworks[0].title, "Yellow Octopus")
+        self.assertEqual(artworks[0].artist.artist_title, "Stacy Smith")
+        
+    @patch('api_requests.requests.get')
     @patch('api_requests.Favorite.query')
     @patch('api_requests.NotFavorite.query')
-    def test_filter(self, mock_not_fav_query, mock_fav_query):
-        """Test the filtering of artworks based on favorites, not favorites, and date range."""
-        # Mock the favorite and not favorite artwork IDs
-        mock_fav_query.filter_by.return_value.all.return_value = [MagicMock(spec=Favorite, artwork_id=1)]
-        mock_not_fav_query.filter_by.return_value.all.return_value = [MagicMock(spec=NotFavorite, artwork_id=2)]
+    @patch('api_requests.Century.query')
+    def test_get_artworks_call(self, mock_century_query, mock_not_fav_query, mock_fav_query, mock_get):
+        # Mock the database queries
+        mock_century_query.get.return_value = self.century
+        mock_fav_query.filter_by.return_value.all.return_value = [self.favorite]
+        mock_not_fav_query.filter_by.return_value.all.return_value = [self.not_favorite]
 
-        # Create a list of artwork instances for the test
-        artworks = [self.test_art_s, self.test_art_a, self.test_art_f]
+        # Mock the requests.get call
+        mock_get_response = MagicMock()
+        mock_get_response.status_code = 200
+        mock_get_response.json.return_value = self.mock_api_response
+        mock_get.return_value = mock_get_response
 
-        # Lists of IDs to simulate what should be returned from actual database queries
-        favorite_ids = [fav.artwork_id for fav in mock_fav_query.filter_by.return_value.all()]
-        not_favorite_ids = [not_fav.artwork_id for not_fav in mock_not_fav_query.filter_by.return_value.all()]
+        # Wrap the function call inside a test request context
+        with self.client.application.test_request_context('/path'):
+            result = APIRequests.get_artworks(self.user)
 
-         # Call the filter_artworks class method
-        filtered_artworks = APIRequests.filter_artworks(
-            artworks, 
-            favorite_ids, 
-            not_favorite_ids, 
-            self.date_range
-        )
 
-        # Assertions to verify the correct filtering of artworks
-        # Only one artwork should match the criteria
-        self.assertEqual(len(filtered_artworks), 1)  
-        self.assertEqual(filtered_artworks[0]['id'], self.test_art_f.id)
-        #test the favorite.artwork.id is correct
-        self.assertEqual(favorite_ids, [1])
-        #test the not_favorite.artwork.id
-        self.assertEqual(not_favorite_ids, [2]) 
+        # Assertions to check if function behaved as expected
+        self.assertEqual(len(result), 50)
+        
+
+        
+            
+
+       
+        
+
+    # @patch('api_requests.Favorite.query')
+    # @patch('api_requests.NotFavorite.query')
+    # def test_filter(self, mock_not_fav_query, mock_fav_query):
+    #     """Test the filtering of artworks based on favorites, not favorites, and date range."""
+    #     # Mock the favorite and not favorite artwork IDs
+    #     mock_fav_query.filter_by.return_value.all.return_value = [MagicMock(spec=Favorite, artwork_id=1)]
+    #     mock_not_fav_query.filter_by.return_value.all.return_value = [MagicMock(spec=NotFavorite, artwork_id=2)]
+
+    #     # Create a list of artwork instances for the test
+    #     artworks = [self.test_art_s, self.test_art_a, self.test_art_f]
+
+    #     # Lists of IDs to simulate what should be returned from actual database queries
+    #     favorite_ids = [fav.artwork_id for fav in mock_fav_query.filter_by.return_value.all()]
+    #     not_favorite_ids = [not_fav.artwork_id for not_fav in mock_not_fav_query.filter_by.return_value.all()]
+
+    #      # Call the filter_artworks class method
+    #     filtered_artworks = APIRequests.filter_artworks(
+    #         artworks, 
+    #         favorite_ids, 
+    #         not_favorite_ids, 
+    #         self.date_range
+    #     )
+
+    #     # Assertions to verify the correct filtering of artworks
+    #     # Only one artwork should match the criteria
+    #     self.assertEqual(len(filtered_artworks), 1)  
+    #     self.assertEqual(filtered_artworks[0]['id'], self.test_art_f.id)
+    #     #test the favorite.artwork.id is correct
+    #     self.assertEqual(favorite_ids, [1])
+    #     #test the not_favorite.artwork.id
+    #     self.assertEqual(not_favorite_ids, [2]) 

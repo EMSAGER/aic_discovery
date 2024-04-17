@@ -1,6 +1,10 @@
 #user -- century
 #favorite & not favorite artowrk
 ###this should handle the response requests
+
+#originally the get_artworks method was a multi-step method. I keep having issues with 
+#testing, I'm now breaking it up. 
+#changed the filtering from client side to API side
 import requests
 import random
 from flask import flash
@@ -23,50 +27,60 @@ class APIRequests:
     }
     
     @classmethod
+    def fetch_artworks_from_api(cls, query_params):
+        """Fetch artwork data from the API"""
+        try:
+            response = requests.get(cls.API_URL, headers=cls.HEADER, params=query_params)
+            if response.status_code == 200:
+                return response.json()['data'], None
+            else:
+                flash(f"Failed to fetch artworks from API - {{response.status_code}} ", "danger")
+                return None
+        except requests.RequestException as e:
+                flash(f"Error connecting to the Art Institute of Chicago API: {e}", "danger") 
+                return None
+    
+    @classmethod
+    def fetch_favorite_and_not_favorite_ids(cls, user_id):
+        """Utility method to fetch favorite and not favorite IDs"""
+        favorite_artwork_ids = [fav.artwork_id for fav in Favorite.query.filter_by(user_id=user_id).all()]
+        not_favorite_artwork_ids = [not_fav.artwork_id for not_fav in NotFavorite.query.filter_by(user_id=user_id).all()]
+        return favorite_artwork_ids, not_favorite_artwork_ids
+    
+    @classmethod
     def get_artworks(cls, user):
+        """Method to get artwork from the API"""
         user_century = Century.query.get(user.century_id).century_name
         date_range = cls.century_dates.get(user_century, (None, None))
         total_art_for_app = 50
-        art_fetched = 0
-        page = 1
-        favorite_artwork_ids = [fav.artwork_id for fav in Favorite.query.filter_by(user_id=user.id).all()]
-        not_favorite_artwork_ids = [not_fav.artwork_id for not_fav in NotFavorite.query.filter_by(user_id=user.id).all()]
         saved_artworks = []
-        while art_fetched < total_art_for_app:
-            query_params = {
-                'limit': 100,
-                'page' : page,
-                'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display'
-            }
-            
-            try:
-                response = requests.get(cls.API_URL, headers=cls.HEADER, params=query_params)
-               
-                if response.status_code == 200:
-                    res_data = response.json()
-                    artworks = res_data.get('data', [])
-                   
-                    
-                    artworks_details = cls.filter_artworks(artworks, favorite_artwork_ids, not_favorite_artwork_ids, date_range)
-                    if not artworks_details:
-                        break
-                    for artwork in artworks_details:
-                        if art_fetched >= total_art_for_app:
-                            break
-                        saved_artwork = save_artwork(artwork_detail=artwork)
-                        if saved_artwork:
-                            saved_artworks.append(saved_artwork)
-                            art_fetched += 1
-                            
-                else:
-                    flash("Failed to fetch artworks from the API", "danger")
-                    break
-                
-            except requests.RequestException as e:
-                flash(f"Error connecting to the Art Institute of Chicago API: {e}", "danger")
+        page = 1
+
+        favorite_artwork_ids, not_favorite_artwork_ids = cls.fetch_favorite_and_not_favorite_ids(user.id)
+
+        #define API parameters with filtering
+        query_params = {
+            'limit': 100,
+            'page' : page,
+            'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display',
+            'excluded_ids': ','.join(map(str, favorite_artwork_ids + not_favorite_artwork_ids)),
+            'date_start_gte': date_range[0],
+            'date_end_lte': date_range[1]
+        }
+
+        #fetch data until enough artworks are collected
+        while len(saved_artworks) < total_art_for_app:
+            artworks, error = cls.fetch_artworks_from_api(query_params)
+            if error or not artworks:
                 break
-        
-            page +=1
+            for artwork in artworks:
+                if len(saved_artworks) >= total_art_for_app:
+                    break
+                saved_artwork = save_artwork(artwork_detail=artwork)
+                if saved_artwork:
+                    saved_artworks.append(saved_artwork)    
+            page += 1
+            query_params['page'] = page
         return saved_artworks
 
     @classmethod
@@ -88,67 +102,28 @@ class APIRequests:
         page = 1
         saved_artworks = []
 
-        while surprised_fetch < total_surprise:
-            query_params = {
-                'limit': 100,
-                'page' : page,
-                'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display, on_view, on_loan'
-            }
-            
-            try:
-                response = requests.get(cls.API_URL, headers=cls.HEADER, params=query_params)
-                if response.status_code == 200:
-                    res_data = response.json()
-                    artworks = res_data.get('data', [])
-                    favorite_artwork_ids = [fav.artwork_id for fav in Favorite.query.filter_by(user_id=user.id).all()]
-                    not_favorite_artwork_ids = [not_fav.artwork_id for not_fav in NotFavorite.query.filter_by(user_id=user.id).all()]
-                    
-                    artworks_details = cls.filter_artworks(artworks, favorite_artwork_ids, not_favorite_artwork_ids, date_range)
-                    for artwork in artworks_details:
-                        if surprised_fetch >= total_surprise:
-                            break
-                        saved_artwork = save_artwork(artwork_detail=artwork)
-                        if saved_artwork:
-                            saved_artworks.append(saved_artwork)
-                            surprised_fetch +=1
-                            
-                    
-                else:
-                    flash("Failed to fetch artworks from the API", "danger")
-                    break
-                
-            except requests.RequestException as e:
-                flash(f"Error connecting to the Art Institute of Chicago API: {e}", "danger")
+        #define API parameters with filtering
+        query_params = {
+            'limit': 100,
+            'page' : page,
+            'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display',
+            'excluded_ids': ','.join(map(str, favorite_artwork_ids + not_favorite_artwork_ids)),
+            'date_start_gte': date_range[0],
+            'date_end_lte': date_range[1]
+        }
+
+        #fetch data until enough artworks are collected
+        while len(surprised_fetch) < total_surprise:
+            artworks, error = cls.fetch_artworks_from_api(query_params)
+            if error or not artworks:
                 break
-            
+            for artwork in artworks:
+                if len(surprised_fetch) >= total_surprise:
+                    break
+                saved_artwork_surprise = save_artwork(artwork_detail=artwork)
+                if saved_artwork_surprise:
+                    saved_artworks.append(saved_artwork_surprise)
             page += 1
+            query_params['page'] = page
+
         return saved_artworks, random_century
-        
-    @classmethod
-    def filter_artworks(cls, artworks, favorite_artwork_ids, not_favorite_artwork_ids, date_range):
-        artworks_details = []
-        date_range_start, date_range_end = map(int, date_range) 
-        
-        for artwork in artworks:
-            #this is an ORM, need to use the getattr to call upon the object
-            date_start = int(getattr(artwork, 'date_start', 0))
-            date_end = int(getattr(artwork, 'date_end', 0))
-            artwork_id = getattr(artwork, 'id', None)
-            
-            
-            if date_range_start <= date_start <= date_range_end or date_range_start <= date_end <= date_range_end:
-                if artwork_id not in favorite_artwork_ids and artwork_id not in not_favorite_artwork_ids:
-                    artworks_details.append({
-                        'id': artwork_id,
-                        'title': getattr(artwork, 'title', ''),
-                        'artist_title': getattr(artwork, 'artist_title', 'Unknown Artist'),
-                        'artist_display': getattr(artwork, 'artist_display', ''),
-                        'date_start': getattr(artwork, 'date_start', ''),
-                        'date_end': getattr(artwork, 'date_end', ''),
-                        'date_display': getattr(artwork, 'date_display', ''),
-                        'medium_display': getattr(artwork, 'medium_display', ''),
-                        'dimensions': getattr(artwork, 'dimensions', ''),
-                        'image_id': getattr(artwork, 'image_id'),
-                        'image_url': f"https://www.artic.edu/iiif/2/{getattr(artwork, 'image_id')}/full/843,/0/default.jpg"
-                    })
-        return artworks_details
