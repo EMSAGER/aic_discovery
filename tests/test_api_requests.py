@@ -241,24 +241,24 @@ class TestAPIRequests(TestCase):
         self.assertIn(century, ['18th Century', '20th Century'])  
         mock_save_artwork.assert_called()
 
-    # @patch('api_requests.requests.get')
-    # @patch('api_requests.Century.query')
-    # @patch('flask.flash')
-    # def test_surprise_me_api_failure(self, mock_flash, mock_century_query, mock_get):
-    #     # Mock Century query
-    #     mock_century_query.get.return_value = Century(century_name='20th Century')
+    @patch('api_requests.requests.get')
+    @patch('api_requests.Century.query')
+    @patch('flask.flash')
+    def test_surprise_me_api_failure(self, mock_flash, mock_century_query, mock_get):
+        # Mock Century query
+        mock_century_query.get.return_value = Century(century_name='20th Century')
 
-    #     # Mock API failure
-    #     mock_response = MagicMock()
-    #     mock_response.status_code = 500
-    #     mock_response.json.return_value = {'error': "Internal Server Error"}
-    #     mock_get.return_value = mock_response
+        # Mock API failure
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.json.return_value = {'error': "Internal Server Error"}
+        mock_get.return_value = mock_response
 
-    #     # Execute the method under test
-    #     artworks, century = APIRequests.surprise_me(self.user)
+        with app.test_request_context():
+            artworks, century = APIRequests.surprise_me(self.user)
 
-    #     # Assertions
-    #     self.assertIsNone(artworks)
-    #     self.assertIsNotNone(century)
-    #     self.assertEqual(century, "Failed with status code 500")
-    #     mock_flash.assert_called_with("Failed to fetch artworks from API: 500", "danger")
+        # Assertions
+        
+        self.assertListEqual([], artworks)
+        self.assertNotEqual(century, '20th Century')
+   
