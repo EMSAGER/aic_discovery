@@ -99,7 +99,7 @@ class APIRequests:
         random_century = random.choice(unchosen_centuries)
         date_range = cls.century_dates.get(random_century, (None, None))
         total_surprise = 50
-        surprised_fetch = 0
+
         page = 1
         favorite_artwork_ids, not_favorite_artwork_ids = cls.fetch_favorite_and_not_favorite_ids(user.id)
         saved_artworks = []
@@ -115,12 +115,12 @@ class APIRequests:
         }
 
         #fetch data until enough artworks are collected
-        while surprised_fetch < total_surprise:
+        while len(saved_artworks) < total_surprise:
             artworks, error = cls.fetch_artworks_from_api(query_params)
             if error or not artworks:
                 return saved_artworks, error  
             for artwork in artworks:
-                if surprised_fetch >= total_surprise:
+                if len(saved_artworks) >= total_surprise:
                     break
                 saved_artwork_surprise = save_artwork(artwork_detail=artwork)
                 if saved_artwork_surprise:

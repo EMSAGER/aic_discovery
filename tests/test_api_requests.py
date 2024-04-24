@@ -204,3 +204,61 @@ class TestAPIRequests(TestCase):
         # Assertions to ensure the behavior is as expected
         self.assertIn(error, 'Failed with status code 500')
         self.assertListEqual(artworks, [])
+
+    @patch('api_requests.requests.get')
+    @patch('api_requests.Century.query')
+    @patch('api_requests.save_artwork')
+    def test_surprise_me_successful(self, mock_save_artwork, mock_century_query, mock_get):
+        # Setting up the mock for Century query
+        mock_century_query.get.return_value = Century(century_name='19th Century')
+
+        # Mock response from API
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            'data': [{
+                'id': 101,
+                'title': "Mystery Art",
+                'artist_title': "Unknown Artist",
+                'image_id': "mysteryart001",
+                'dimensions': "100x100",
+                'medium_display': "Mysterious Medium",
+                'date_display': "1900s",
+                'date_start': 1900,
+                'date_end': 1999,
+                'artist_display': "Anonymous",
+                'image_url': "http://example.com/mysteryart.jpg"
+            } for i in range(10)]
+        }
+        mock_get.return_value = mock_response
+
+        # Execute the method under test
+        artworks, century = APIRequests.surprise_me(self.user)
+
+        # Assertions
+        self.assertEqual(len(artworks), 50)
+        self.assertIsNotNone(century)
+        self.assertIn(century, ['18th Century', '20th Century'])  
+        mock_save_artwork.assert_called()
+
+    # @patch('api_requests.requests.get')
+    # @patch('api_requests.Century.query')
+    # @patch('flask.flash')
+    # def test_surprise_me_api_failure(self, mock_flash, mock_century_query, mock_get):
+    #     # Mock Century query
+    #     mock_century_query.get.return_value = Century(century_name='20th Century')
+
+    #     # Mock API failure
+    #     mock_response = MagicMock()
+    #     mock_response.status_code = 500
+    #     mock_response.json.return_value = {'error': "Internal Server Error"}
+    #     mock_get.return_value = mock_response
+
+    #     # Execute the method under test
+    #     artworks, century = APIRequests.surprise_me(self.user)
+
+    #     # Assertions
+    #     self.assertIsNone(artworks)
+    #     self.assertIsNotNone(century)
+    #     self.assertEqual(century, "Failed with status code 500")
+    #     mock_flash.assert_called_with("Failed to fetch artworks from API: 500", "danger")
