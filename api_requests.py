@@ -34,12 +34,14 @@ class APIRequests:
             if response.status_code == 200:
                 return response.json()['data'], None
             else:
-                flash(f"Failed to fetch artworks from API - {{response.status_code}} ", "danger")
-                return None
+            # Properly handle non-200 responses
+                flash(f"Failed to fetch artworks from API: {response.status_code}", "danger")
+                return None, f"Failed with status code {response.status_code}"
         except requests.RequestException as e:
-                flash(f"Error connecting to the Art Institute of Chicago API: {e}", "danger") 
-                return None
-    
+            # Handle connection errors
+            flash(f"Error connecting to the Art Institute of Chicago API: {e}", "danger") 
+            return None, str(e)
+        
     @classmethod
     def fetch_favorite_and_not_favorite_ids(cls, user_id):
         """Utility method to fetch favorite and not favorite IDs"""
@@ -72,7 +74,7 @@ class APIRequests:
         while len(saved_artworks) < total_art_for_app:
             artworks, error = cls.fetch_artworks_from_api(query_params)
             if error or not artworks:
-                break
+                return saved_artworks, error
             for artwork in artworks:
                 if len(saved_artworks) >= total_art_for_app:
                     break
@@ -81,7 +83,7 @@ class APIRequests:
                     saved_artworks.append(saved_artwork)    
             page += 1
             query_params['page'] = page
-        return saved_artworks
+        return saved_artworks, None
 
     @classmethod
     def surprise_me(cls, user):
@@ -96,10 +98,10 @@ class APIRequests:
 
         random_century = random.choice(unchosen_centuries)
         date_range = cls.century_dates.get(random_century, (None, None))
-
         total_surprise = 50
         surprised_fetch = 0
         page = 1
+        favorite_artwork_ids, not_favorite_artwork_ids = cls.fetch_favorite_and_not_favorite_ids(user.id)
         saved_artworks = []
 
         #define API parameters with filtering
@@ -113,12 +115,12 @@ class APIRequests:
         }
 
         #fetch data until enough artworks are collected
-        while len(surprised_fetch) < total_surprise:
+        while surprised_fetch < total_surprise:
             artworks, error = cls.fetch_artworks_from_api(query_params)
             if error or not artworks:
-                break
+                return saved_artworks, error  
             for artwork in artworks:
-                if len(surprised_fetch) >= total_surprise:
+                if surprised_fetch >= total_surprise:
                     break
                 saved_artwork_surprise = save_artwork(artwork_detail=artwork)
                 if saved_artwork_surprise:

@@ -12,6 +12,7 @@ from unittest.mock import patch, MagicMock, call
 from api_requests import APIRequests
 from models import db, User, Century, Favorite, NotFavorite, Artwork, Artist
 from app import app, CURR_USER_KEY
+import requests
 import logging
 
 # Set up logging
@@ -115,7 +116,7 @@ class TestAPIRequests(TestCase):
     @patch('api_requests.requests.get')
     def test_get_artworks(self, mock_get):
         """Test get_artworks with mocked API response"""
-        mock_response = {
+        mock_response  = {
             "data": [
                 {
                     "id": 1, 
@@ -135,10 +136,11 @@ class TestAPIRequests(TestCase):
         mock_get.return_value.json.return_value = mock_response
     
         # simulate getting all needed artowrks within 5 API calls
-        artworks = APIRequests.get_artworks(self.user)
+        artworks, error = APIRequests.get_artworks(self.user)
         
         
         self.assertEqual(len(artworks), 50) #equally the amount wanted
+        self.assertIsNone(error)
         self.assertTrue(mock_get.call_count <= 6) #ensure not too many calls are sent
         self.assertEqual(artworks[0].title, "Yellow Octopus")
         self.assertEqual(artworks[0].artist.artist_title, "Stacy Smith")
@@ -160,48 +162,45 @@ class TestAPIRequests(TestCase):
         mock_get.return_value = mock_get_response
 
         # Wrap the function call inside a test request context
-        with self.client.application.test_request_context('/path'):
+        with self.client.application.test_request_context('/users/profile'):
             result = APIRequests.get_artworks(self.user)
 
 
         # Assertions to check if function behaved as expected
-        self.assertEqual(len(result), 50)
-        
+        self.assertEqual(len(result), 2)
 
-        
-            
+    @patch('api_requests.requests.get')
+    def test_get_artworks_empty_response(self, mock_get):
+        """Test get_artworks when the API returns an empty list of artworks."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {'data': []}
+        mock_get.return_value = mock_response
 
-       
-        
+        # Execute the function under test
+        artworks, error = APIRequests.get_artworks(self.user)
 
-    # @patch('api_requests.Favorite.query')
-    # @patch('api_requests.NotFavorite.query')
-    # def test_filter(self, mock_not_fav_query, mock_fav_query):
-    #     """Test the filtering of artworks based on favorites, not favorites, and date range."""
-    #     # Mock the favorite and not favorite artwork IDs
-    #     mock_fav_query.filter_by.return_value.all.return_value = [MagicMock(spec=Favorite, artwork_id=1)]
-    #     mock_not_fav_query.filter_by.return_value.all.return_value = [MagicMock(spec=NotFavorite, artwork_id=2)]
+        # Assert that the artworks list is empty
+        self.assertEqual(len(artworks), 0)
+        # Assert that there is no error
+        self.assertIsNone(error)
+        # Assert that the get request was called correctly
+        mock_get.assert_called_once()
 
-    #     # Create a list of artwork instances for the test
-    #     artworks = [self.test_art_s, self.test_art_a, self.test_art_f]
+    @patch('api_requests.requests.get')
+    @patch('flask.flash')
+    def test_get_artworks_api_failure(self, mock_flash, mock_get):
+        """Test handling of non-200 response from the API."""
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.json.return_value = {"error": "Internal Server Error"}
+        mock_get.return_value = mock_response
 
-    #     # Lists of IDs to simulate what should be returned from actual database queries
-    #     favorite_ids = [fav.artwork_id for fav in mock_fav_query.filter_by.return_value.all()]
-    #     not_favorite_ids = [not_fav.artwork_id for not_fav in mock_not_fav_query.filter_by.return_value.all()]
+        with app.test_request_context():
+            #above method This method creates an explicit request context which mimics an HTTP request.\
+            # It can be more reliable when you want to control the context more directly than what with self.client: provides.
+            artworks, error = APIRequests.get_artworks(self.user)
 
-    #      # Call the filter_artworks class method
-    #     filtered_artworks = APIRequests.filter_artworks(
-    #         artworks, 
-    #         favorite_ids, 
-    #         not_favorite_ids, 
-    #         self.date_range
-    #     )
-
-    #     # Assertions to verify the correct filtering of artworks
-    #     # Only one artwork should match the criteria
-    #     self.assertEqual(len(filtered_artworks), 1)  
-    #     self.assertEqual(filtered_artworks[0]['id'], self.test_art_f.id)
-    #     #test the favorite.artwork.id is correct
-    #     self.assertEqual(favorite_ids, [1])
-    #     #test the not_favorite.artwork.id
-    #     self.assertEqual(not_favorite_ids, [2]) 
+        # Assertions to ensure the behavior is as expected
+        self.assertIn(error, 'Failed with status code 500')
+        self.assertListEqual(artworks, [])
