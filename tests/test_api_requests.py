@@ -12,7 +12,6 @@ from unittest.mock import patch, MagicMock, call
 from api_requests import APIRequests
 from models import db, User, Century, Favorite, NotFavorite, Artwork, Artist
 from app import app, CURR_USER_KEY
-import requests
 import logging
 
 # Set up logging

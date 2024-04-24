@@ -31,7 +31,7 @@ class SaveArtwork:
             artwork.medium_display = artwork_detail['medium_display']
             artwork.dimensions = artwork_detail['dimensions']
             artwork.image_id = artwork_detail.get('image_id')
-            artwork.image_url = artwork_detail['image_url']
+            artwork.image_url = artwork_detail.get('image_url', None)
         else:
             #creates a new entry
             artwork = Artwork(
@@ -43,7 +43,7 @@ class SaveArtwork:
                 medium_display=artwork_detail['medium_display'],
                 dimensions=artwork_detail['dimensions'],
                 image_id=artwork_detail.get('image_id'),
-                image_url=artwork_detail['image_url']
+                image_url=artwork_detail.get('image_url', None)
             )
             db.session.add(artwork)
 

@@ -4,6 +4,14 @@
 from unittest import TestCase
 from models import User, Artist, Artwork, Classification, Favorite, NotFavorite, Century, connect_db, db
 import os
+import logging
+
+
+# Set up logging
+logging.basicConfig(level=logging.WARNING)  # Set to WARNING to reduce output, or ERROR to make it even less verbose
+
+# Adjust logging level for SQLAlchemy specifically if needed
+logging.getLogger('sqlalchemy.engine').setLevel(logging.CRITICAL)
 
 # run these tests like:
 #
@@ -28,7 +36,11 @@ class ModelsViewTestCase(TestCase):
         self.app_context.push()  
         db.create_all()
         self.cleardb()
-        self.century_seed()
+
+       # Create a century entry to be used in tests
+        self.c_18 = Century(century_name="18th Century")
+        db.session.add(self.c_18)
+        db.session.commit()
 
     def cleardb(self):
         User.query.delete()
@@ -37,10 +49,7 @@ class ModelsViewTestCase(TestCase):
         Favorite.query.delete()
         Century.query.delete()
 
-    def century_seed(self):
-        c_18 = Century(century_name="18th Century")
-        db.session.add(c_18)
-        db.session.commit()
+    
 
     def tearDown(self):
         """Clean up any fouled transaction."""
@@ -50,5 +59,14 @@ class ModelsViewTestCase(TestCase):
 
     def test_user_creation(self):
         """test the User Model"""
-        user = User.signup("testuser2", "password", "test2@example.com", "Test", "User", c_18.id)
+        user = User.signup(
+            "testuser2", 
+            "password", 
+            "test2@example.com", 
+            "Test", 
+            "User", 
+            self.c_18.id  
+        )
+        db.session.add(user)
+        db.session.commit()
         self.assertIsNotNone(user.id)

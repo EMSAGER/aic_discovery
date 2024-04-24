@@ -1,6 +1,14 @@
 from unittest import TestCase
 from models import User, Century, db, Artwork, Artist, Favorite, NotFavorite
 import os
+import logging
+
+
+# Set up logging
+logging.basicConfig(level=logging.WARNING)  # Set to WARNING to reduce output, or ERROR to make it even less verbose
+
+# Adjust logging level for SQLAlchemy specifically if needed
+logging.getLogger('sqlalchemy.engine').setLevel(logging.CRITICAL)
 
 # run these tests like:
 #
