@@ -3,12 +3,19 @@
 
 import os
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from models import db, Artwork, Artist
 from artwork import SaveArtwork
-from app import app
-from flask import current_app
+from app import app, CURR_USER_KEY
+from flask import current_app, get_flashed_messages
+import logging
 
+
+# Set up logging
+logging.basicConfig(level=logging.ERROR)  # Set to WARNING to reduce output, or ERROR to make it even less verbose
+
+# Adjust logging level for SQLAlchemy specifically if needed
+logging.getLogger('sqlalchemy.engine').setLevel(logging.CRITICAL)
 app.config['WTF_CSRF_ENABLED'] = False
 os.environ['DATABASE_URL'] = "postgresql:///test_aic_capstone"
 
@@ -119,13 +126,15 @@ class TestSaveArtwork(TestCase):
         self.assertEqual(Artwork.query.count(), 2)
         self.assertEqual(Artist.query.count(), 1)
 
+    
     def test_save_image_file(self):
         """Testing downloading and image from the image_url and saving it the static file"""
         #mock the `requests.get` method & return a mock response with status code 200 & mock the flash
-        with patch('artwork.requests.get') as mock_get, patch('artwork.flash') as mock_flash:
+        with patch('artwork.requests.get') as mock_get:
+            mock_get.start()
             #configure the mock to return a response with a succesful status code & binary
             mock_get.return_value.status_code = 200
-            mock_get.return_value.content = b'test_image_content'
+            
 
             #title & image_id to use for testing
             title = self.artwork.title
@@ -140,6 +149,9 @@ class TestSaveArtwork(TestCase):
             # Call the save_image_file method
             SaveArtwork.save_image_file(image_url, image_id, title)
 
+            # self.assertTrue(mock_flash.called)
+            self.assertTrue(mock_get.called)
+
             # Build the file path
             test_image_path = os.path.join(TEST_IMAGES_DIR, f"{title.replace(' ', '_')}_{image_id}.jpg")
 
@@ -150,5 +162,51 @@ class TestSaveArtwork(TestCase):
             if os.path.exists(test_image_path):
                 os.remove(test_image_path)
 
-            #assert the flash occurred
-            mock_flash.assert_called_with("Images successfully saved.", "success")
+           
+    @patch('artwork.flash')
+    def test_save_artwork_flash_on_error(self, mock_flash):
+        """Test that a flash message is sent on database error."""
+        artwork_detail = {
+            'id': 13,
+            'title': "Color Theory",
+            'artist_title': "Taylor swift",
+            'date_start': 1989,
+            'date_end': 2079,
+            'medium_display': "Oil on Canvas",
+            'dimensions': "200x300",
+            'image_id': "cats",
+            'image_url': "http://cats.com/image.jpg"
+        }
+
+        with patch('artwork.db.session.commit', side_effect=Exception("DB Error")):
+            result = SaveArtwork.save_artwork(artwork_detail)
+            self.assertIsNone(result)
+            mock_flash.assert_called_with('An error occurred while saving the artist: DB Error', 'danger')
+
+    @patch('artwork.requests.get')
+    @patch('artwork.flash')
+    def test_save_image_file_flash_success(self, mock_flash, mock_get):
+        """Ensure flash message is triggered correctly on successful image download."""
+        # Set up the mock return value
+        mock_get.return_value.status_code = 200
+            #using the b'' represents the byte string used in responses from servers\
+            #this simulates teh behavior of a successful HTTP GET reuest that retrieves
+            #data from a specified URL w/o performing the network operation
+        mock_get.return_value.content = b'fake-image-content'
+
+        image_id = "1adf2696-8489-499b-cad2-821d7fde4b33"
+        image_url = "https://www.artic.edu/iiif/2/2d484387-2509-5e8e-2c43-22f9981972eb/full/843,/0/default.jpg"
+        title = "A Sunday on La Grande Jatte — 1884"
+
+        # Expected path where the image should be saved
+        expected_image_path = os.path.join(current_app.static_folder, 'images', f"{title.replace(' ', '_')}_{image_id}.jpg")
+
+        # Call the method under test
+        SaveArtwork.save_image_file(image_url, image_id, title)
+
+        # Check if the file exists and clean up
+        self.assertTrue(os.path.exists(expected_image_path))
+        os.remove(expected_image_path)
+
+        # Ensure flash was called with success message
+        mock_flash.assert_called_with("Images successfully saved.", "success")

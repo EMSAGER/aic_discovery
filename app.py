@@ -288,9 +288,9 @@ def surprise_home():
         artwork_to_display = random.choice(artworks_details)
         return render_template('/users/surprise.html', artwork=artwork_to_display, user=user, form=form, century=random_century)
     
-    else:
-        flash("Failed to fetch SURPRISE data.", "danger")
-        return redirect('/users/profile')
+    
+    flash("Failed to fetch SURPRISE data.", "danger")
+    return redirect('/users/profile')
     
     
 ##############################################################################

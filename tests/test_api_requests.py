@@ -8,7 +8,7 @@
 import os
 
 from unittest import TestCase
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock
 from api_requests import APIRequests
 from models import db, User, Century, Favorite, NotFavorite, Artwork, Artist
 from app import app, CURR_USER_KEY
