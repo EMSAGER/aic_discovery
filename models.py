@@ -29,7 +29,8 @@ class User(db.Model):
     @classmethod
     def signup(cls, username, password, email, first_name, last_name, century_id):
         """Register user w/hashed password & return user."""
-
+        if cls.query.filter_by(username=username).first():
+            raise ValueError("Username already exists")
         hashed_pwd = bcrypt.generate_password_hash(password).decode('UTF-8')
         # return instance of user w/username and hashed pwd
         user = User(

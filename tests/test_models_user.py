@@ -38,6 +38,9 @@ class UserModelTestCase(TestCase):
         self.cleardb()
         self.century_seed()
 
+        self.username = "testuser"
+        self.email = "test@test.com"
+
     def cleardb(self):
         User.query.delete()
         Artwork.query.delete()
@@ -57,16 +60,54 @@ class UserModelTestCase(TestCase):
         db.drop_all()
         self.app_context.pop()
 
-    def test_user_creation(self):
-        """test the User Model"""
-        user = User.signup(username="testuserzzzz", password="password", email="test@test.com", 
+    def test_user_signup(self):
+        """Test user signup."""
+        user = User.signup(username="testuser", password="password", email="test@test.com", 
                            first_name="Test", last_name="User", century_id=self.century.id)
-        self.assertIsNotNone(user)
-    
-    def test_user_authenticate(self):
-        """Test user authentication."""
-        self.test_user_creation()
-        user = User.authenticate(username="testuserzzzz", pwd="password")
-        self.assertIsNotNone(user)
-        self.assertEqual(user.username, "testuserzzzz")
+        db.session.commit()
+        self.assertIsNotNone(user.id)
+        self.assertEqual(user.username, self.username)
+        self.assertEqual(user.email, self.email)
+        self.assertTrue(user.password.startswith("$2b$"))
 
+    def test_user_signup_duplicate_username(self):
+        """Test to prevent duplicate username signup."""
+        User.signup(username=self.username, password="password", email=self.email,
+                    first_name="Test", last_name="User", century_id=self.century.id)
+        db.session.commit()
+
+        # Expecting the duplicate signup to raise a ValueError
+        with self.assertRaises(ValueError) as context:
+            User.signup(username=self.username, password="password2", email="test2@test.com",
+                        first_name="Test2", last_name="User2", century_id=self.century.id)
+            db.session.commit()
+        
+        self.assertTrue('Username already exists' in str(context.exception))
+
+    def test_user_authenticate_success(self):
+        """Test successful user authentication."""
+        user = User.signup(username="authuser", password="password", email="auth@test.com",
+                           first_name="Auth", last_name="User", century_id=self.century.id)
+        db.session.commit()
+        authenticated_user = User.authenticate(username="authuser", pwd="password")
+        self.assertEqual(user.id, authenticated_user.id)
+
+    def test_user_authenticate_wrong_password(self):
+        """Test user authentication with wrong password."""
+        User.signup(username="authuser", password="password", email="auth@test.com",
+                    first_name="Auth", last_name="User", century_id=self.century.id)
+        db.session.commit()
+        authenticated_user = User.authenticate(username="authuser", pwd="wrongpassword")
+        self.assertFalse(authenticated_user)
+
+    def test_user_authenticate_nonexistent_user(self):
+        """Test authentication with nonexistent user."""
+        authenticated_user = User.authenticate(username="nobody", pwd="password")
+        self.assertFalse(authenticated_user)
+
+    def test_full_name(self):
+        """Test the full name property."""
+        user = User.signup(username="fullnameuser", password="password", email="fullname@test.com",
+                           first_name="Full", last_name="Name", century_id=self.century.id)
+        db.session.commit()
+        self.assertEqual(user.full_name, "Full Name")

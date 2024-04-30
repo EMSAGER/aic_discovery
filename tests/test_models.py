@@ -1,5 +1,4 @@
-#tests artwork.py
-#tests the code that saves artwork to the db or to a file
+#tests user model
 
 from unittest import TestCase
 from models import User, Artist, Artwork, Classification, Favorite, NotFavorite, Century, connect_db, db
