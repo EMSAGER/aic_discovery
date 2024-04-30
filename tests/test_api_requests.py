@@ -12,6 +12,7 @@ from unittest.mock import patch, MagicMock
 from api_requests import APIRequests
 from models import db, User, Century, Favorite, NotFavorite, Artwork, Artist
 from app import app, CURR_USER_KEY
+from flask import flash, get_flashed_messages
 import logging
 
 # Set up logging
@@ -187,8 +188,7 @@ class TestAPIRequests(TestCase):
         mock_get.assert_called_once()
 
     @patch('api_requests.requests.get')
-    @patch('flask.flash')
-    def test_get_artworks_api_failure(self, mock_flash, mock_get):
+    def test_get_artworks_api_failure(self, mock_get):
         """Test handling of non-200 response from the API."""
         mock_response = MagicMock()
         mock_response.status_code = 500
@@ -242,8 +242,7 @@ class TestAPIRequests(TestCase):
 
     @patch('api_requests.requests.get')
     @patch('api_requests.Century.query')
-    @patch('flask.flash')
-    def test_surprise_me_api_failure(self, mock_flash, mock_century_query, mock_get):
+    def test_surprise_me_api_failure(self, mock_century_query, mock_get):
         # Mock Century query
         mock_century_query.get.return_value = Century(century_name='20th Century')
 
@@ -261,3 +260,21 @@ class TestAPIRequests(TestCase):
         self.assertListEqual([], artworks)
         self.assertNotEqual(century, '20th Century')
    
+    @patch('api_requests.requests.get')
+    def test_api_failure_flashes_error(self, mock_get):
+        """Test API failure triggers flash with error message."""
+        # Configure mock_get to simulate a failed API response
+        mock_get.return_value.status_code = 500
+        mock_get.return_value.json.return_value = {'error': 'Internal Server Error'}
+
+         # Wrap the API call within the application context and capture flashed messages
+        with app.test_request_context('/'):
+            APIRequests.get_artworks(self.user)
+            # Get flashed messages
+            flashed_messages = get_flashed_messages(with_categories=True)
+        
+        # Check if the correct message was flashed
+        expected_message = ('danger', "Failed to fetch artworks from API: 500")
+        self.assertIn(expected_message, flashed_messages)
+
+    
