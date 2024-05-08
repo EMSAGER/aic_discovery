@@ -1,4 +1,6 @@
 from unittest import TestCase
+from unittest.mock import patch
+from api_requests import APIRequests
 from models import User, Century, db, Artwork, Artist, Favorite, NotFavorite
 import os
 import logging
@@ -31,7 +33,6 @@ class SurpriseViewTestCase(TestCase):
         self.client = app.test_client()
         self.app_context = app.app_context()
         self.app_context.push()  
-        db.create_all()
         self.populate_db()
         
        
@@ -43,28 +44,11 @@ class SurpriseViewTestCase(TestCase):
 
     def populate_db(self):
         """Set up the db with the initial data - helper method"""
-        User.query.delete()
-        Century.query.delete()
-        Artwork.query.delete()
-        Favorite.query.delete()
+        db.drop_all()
+        db.create_all()
         
         c_18 = Century(century_name="18th Century")
         db.session.add(c_18)
-        db.session.commit()
-
-        Stacy = Artist(artist_title="Stacy Smith", artist_display="TAAACOS")
-        Allison = Artist(artist_title="Allison Currie", artist_display="CRAWFISH")
-        db.session.add_all([Stacy, Allison])
-        db.session.commit()
-
-        self.test_art_s = Artwork(title="Does Allison love Em more than queso?",
-                                  artist_id=Stacy.id, 
-                                  image_url="https://example.com/art_s.jpg")
-        self.test_art_a = Artwork(title="Does Stacy love Em more than yellow octopus?",
-                                  artist_id=Allison.id, 
-                                  image_url="https://example.com/art_a.jpg")
-
-        db.session.add_all([self.test_art_s, self.test_art_a])
         db.session.commit()
 
         self.u1 = User.signup(
@@ -77,7 +61,7 @@ class SurpriseViewTestCase(TestCase):
         
         db.session.add(self.u1)
         db.session.commit()
-
+        
     def tearDown(self):
         """Clean up any fouled transaction."""
         db.session.remove()
@@ -88,51 +72,47 @@ class SurpriseViewTestCase(TestCase):
         with self.client as c:
             res = c.get('/users/surprise', follow_redirects=True)
             html = res.get_data(as_text=True)
-        
             self.assertEqual(res.status_code, 200)
             self.assertIn("Access unauthorized.", html)
-    
-    # def test_suprise_me(self):
-    #     """test accessing Surprise Me route with a logged-in user."""
-    #     with self.client as c:
-    #             #simulate a login
-    #         with c.session_transaction() as sess:
-    #             sess[CURR_USER_KEY] = self.u1.id 
-            
-    #         res = c.get('/users/surprise')
-    #         html = res.get_data(as_text=True)
-        
-    #         self.assertEqual(res.status_code, 200)
-    #         self.assertIn("card surprise-artwork-card", html)
-    
-    # def test_surprise_favorite(self):
-    #     """test accessing Surprise Me route with a logged-in user."""
-    #     with self.client as c:
-    #             #simulate a login
-    #         with c.session_transaction() as sess:
-    #             sess[CURR_USER_KEY] = self.u1.id
-            
-    #         res = c.post('/users/surprise', data={'artwork_id': self.test_art_s.id, 'action': 'favorite'}, follow_redirects=True)
-    #         html = res.get_data(as_text=True)
-        
-    #         self.assertEqual(res.status_code, 200)
-    #         self.assertIn("surprise-artwork", html)
 
-    #         favorite = Favorite.query.filter_by(artwork_id=self.test_art_s.id).first()
-    #         self.assertIsNotNone(favorite)
+    @patch('APIRequests.surprise_me')
+    def test_suprise_me(self, mock_surprise_me):
+        """Test accessing Surprise Me route with a logged-in user."""
+        # Setup mock
+        mock_surprise_me.return_value = ([{'title': 'Mona Lisa', 'image_url': 'http://example.com/mona.jpg'}], '18th Century')
 
-    def test_surprise_not_favorite(self):
-        """test accessing Surprise Me route with a logged-in user."""
         with self.client as c:
-                #simulate a login
             with c.session_transaction() as sess:
                 sess[CURR_USER_KEY] = self.u1.id
-            
-            res = c.post('/users/surprise', data={'artwork_id': self.test_art_s.id, 'action': 'not_favorite'}, follow_redirects=True)
-            html = res.get_data(as_text=True)
-        
-            self.assertEqual(res.status_code, 200)
-            self.assertIn("surprise-artwork", html)
 
-            not_favorite = NotFavorite.query.filter_by(user_id=self.u1.id, artwork_id=self.test_art_s.id).first()
-            self.assertIsNone(not_favorite)
+            res = c.get('/users/surprise')
+            html = res.get_data(as_text=True)
+            self.assertEqual(res.status_code, 200)
+            self.assertIn("Mona Lisa", html)
+
+    @patch('APIRequests.surprise_me')
+    def test_surprise_me_favorite_(self, mock_surprise_me):
+        """Test POST action for favoriting an artwork via the Surprise me route"""
+        #setup mock
+        mock_artwork = [
+            {'title': 'Mona Lisa', 'image_url': 'http://example.com/mona.jpg', 'artist_id': 1, 'artwork_id': 1}
+        ]
+        mock_surprise_me.return_value = (mock_artwork, '20th Century')
+
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u1.id
+
+            # Sending POST request to the route
+                res = c.post('/users/surprise', data={'action': 'favorite', 'user_id': self.u1.id, 'artwork_id': 1,}, follow_redirects=True)
+
+                self.assertEqual(res.status_code, 200)
+
+                # Fetch the favorite from the database
+                f = Favorite.query.first()
+                
+                #check db to see if favorite is added
+                self.assertIsNotNone(f)
+                self.assertEqual(f.user_id, self.u1.id)
+                self.assertEqual(f.artwork_id, 1)
+

@@ -36,14 +36,6 @@ class ArtworkModelTestCase(TestCase):
         self.app_context.push()  
         self.populate_db()
         
-       
-    def tearDown(self):
-        """Clean up any fouled transaction."""
-        db.session.remove()
-        db.drop_all()
-        self.app_context.pop()
-
-    
     def populate_db(self):
         """Add sample data to the database."""
         db.drop_all()
@@ -72,6 +64,7 @@ class ArtworkModelTestCase(TestCase):
         """Clean up any fouled transaction."""
         db.session.remove()
         db.drop_all()
+        self.app_context.pop()
 
     def test_artwork_creation(self):
         """Test creating an artwork and verifying its properties."""

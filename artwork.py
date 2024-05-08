@@ -17,7 +17,7 @@ class SaveArtwork:
                 db.session.commit()
             except Exception as e:
                 db.session.rollback()
-                flash(f"An error occurred while saving the artist: {e}", "danger")
+                flash(f"ARTWORK.PY-An error occurred while saving the artist: {e}", "danger")
                 return None
 
         #check if an artwork with the provided id already exists
@@ -31,9 +31,12 @@ class SaveArtwork:
             artwork.medium_display = artwork_detail['medium_display']
             artwork.dimensions = artwork_detail['dimensions']
             artwork.image_id = artwork_detail.get('image_id')
-            artwork.image_url = artwork_detail.get('image_url', None)
+            artwork.image_url=artwork_detail['image_url']
         else:
             #creates a new entry
+            image_id = artwork_detail.get('image_id')
+            image_url = f"https://www.artic.edu/iiif/2/{image_id}/full/843,/0/default.jpg"
+
             artwork = Artwork(
                 id = artwork_detail['id'],
                 title=artwork_detail['title'],
@@ -42,8 +45,8 @@ class SaveArtwork:
                 date_end=artwork_detail.get('date_end'),
                 medium_display=artwork_detail['medium_display'],
                 dimensions=artwork_detail['dimensions'],
-                image_id=artwork_detail.get('image_id'),
-                image_url=artwork_detail.get('image_url', None)
+                image_id=image_id,
+                image_url=image_url
             )
             db.session.add(artwork)
 
@@ -52,7 +55,7 @@ class SaveArtwork:
             return artwork
         except Exception as e:
             db.session.rollback()
-            flash(f"An error occurred while saving the artwork: {e}", "danger")
+            flash(f"ARTWORK.PY:An error occurred while saving the artwork: {e}", "danger")
             return None
         
     @classmethod
@@ -76,4 +79,4 @@ class SaveArtwork:
                         print(flash.__class__)
                         flash("Images successfully saved.", "success")
         except Exception as e:
-            flash("Failed to download image", "danger")
+            flash("ARTWORK.PY-Failed to download image", "danger")

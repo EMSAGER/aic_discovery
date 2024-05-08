@@ -43,7 +43,6 @@ def initialize_app():
     """initiailiaze application & create necessary directories"""
     
     create_directories()
-    # initialize_centuries()
     add_user_to_g()
     
 
@@ -275,9 +274,10 @@ def surprise_home():
 
         if action == 'favorite':
             fav_artwork(user, artwork_id)
+            db.session.commit()
         elif action == 'not_favorite':
             unfavorite_artwork(user, artwork_id)
-        
+            db.session.commit()
 
         #redirect to avoid resubmission 
         return redirect('/users/surprise')
@@ -288,9 +288,9 @@ def surprise_home():
         artwork_to_display = random.choice(artworks_details)
         return render_template('/users/surprise.html', artwork=artwork_to_display, user=user, form=form, century=random_century)
     
-    
-    flash("Failed to fetch SURPRISE data.", "danger")
-    return redirect('/users/profile')
+    else:
+        flash("Failed to fetch SURPRISE data.", "danger")
+        return redirect('/users/profile')
     
     
 ##############################################################################

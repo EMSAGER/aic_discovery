@@ -18,7 +18,8 @@ class User(db.Model):
     century_id = db.Column(db.Integer, db.ForeignKey('centuries.id'), nullable=False)
     
     favorites = db.relationship('Favorite', backref='user')
-    century = db.relationship('Century', backref='users')
+    not_favorites = db.relationship('NotFavorite', backref='user')
+    century = db.relationship('Century', backref='user')
 
     @property
     def full_name(self):
@@ -112,12 +113,18 @@ class Favorite(db.Model):
     artist_id = db.Column(db.Integer, db.ForeignKey('artists.id'), nullable=False)
     artwork_id = db.Column(db.Integer, db.ForeignKey('artworks.id'), nullable=False)
 
+    artist = db.relationship('Artist', backref='favorites')
+    artwork = db.relationship('Artwork', backref='favorites')
+
 class NotFavorite(db.Model):
     __tablename__ = 'not_favorites'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     artist_id = db.Column(db.Integer, db.ForeignKey('artists.id'), nullable=False)
     artwork_id = db.Column(db.Integer, db.ForeignKey('artworks.id'), nullable=False)
+
+    artist = db.relationship('Artist', backref='not_favorites')
+    artwork = db.relationship('Artwork', backref='not_favorites')
 
 class Century(db.Model):
     __tablename__= 'centuries'
