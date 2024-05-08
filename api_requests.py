@@ -25,7 +25,24 @@ class APIRequests:
         '19th Century': ('1800', '1899'),
         '20th Century': ('1900', '1999'),
     }
+
+    @classmethod
+    def filter_dates(cls, artwork, user_century):
+        """Utility method for filtering artwork"""
+        date_range = cls.century_dates.get(user_century, (None, None))
+        if date_range == (None, None):
+            return None
+        
+        date_start = int(artwork['date_start'])
+        date_end = int(artwork['date_end'])
+        date_range_start, date_range_end = map(int, date_range)
+        
+        if date_range_start <= date_start <= date_range_end or date_range_start <= date_end <= date_range_end:
+            return artwork
+        else:
+            return None
     
+   
     @classmethod
     def fetch_artworks_from_api(cls, query_params):
         """Fetch artwork data from the API"""
@@ -50,10 +67,10 @@ class APIRequests:
         return favorite_artwork_ids, not_favorite_artwork_ids
     
     @classmethod
-    def get_artworks(cls, user):
+    def  get_artworks(cls, user):
         """Method to get artwork from the API"""
         user_century = Century.query.get(user.century_id).century_name
-        date_range = cls.century_dates.get(user_century, (None, None))
+        # date_range = cls.century_dates.get(user_century, (None, None))
         total_art_for_app = 50
         saved_artworks = []
         page = 1
@@ -77,11 +94,14 @@ class APIRequests:
             if error or not artworks_details:
                 return saved_artworks, error
             for artwork in artworks_details:
-                if len(saved_artworks) >= total_art_for_app:
-                    break
-                saved_artwork = save_artwork(artwork_detail=artwork)
-                if saved_artwork:
-                    saved_artworks.append(saved_artwork)    
+                newart = cls.filter_dates(artwork, user_century)
+                if newart:
+                    saved_artwork = save_artwork(artwork_detail=newart)
+                    if saved_artwork:
+                        saved_artworks.append(saved_artwork) 
+                    if len(saved_artworks) >= total_art_for_app:
+                        break
+                    
             page += 1
             query_params['page'] = page
         return saved_artworks

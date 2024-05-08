@@ -31,7 +31,7 @@ class SaveArtwork:
             artwork.medium_display = artwork_detail['medium_display']
             artwork.dimensions = artwork_detail['dimensions']
             artwork.image_id = artwork_detail.get('image_id')
-            artwork.image_url=artwork_detail['image_url']
+            # artwork.image_url=artwork_detail.get('image_url')
         else:
             #creates a new entry
             image_id = artwork_detail.get('image_id')

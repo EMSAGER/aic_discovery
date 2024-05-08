@@ -1,6 +1,6 @@
 from flask import Flask, render_template, redirect, session, flash, g, request
 from flask_debugtoolbar import DebugToolbarExtension
-from  models import connect_db, db, User, Favorite, Artwork, Century
+from  models import db, User, Favorite, Artwork, Century
 from  forms import UserEditForm, UserForm, LoginForm, FavoriteForm
 from sqlalchemy.exc import IntegrityError
 from  api_requests import APIRequests
@@ -25,7 +25,7 @@ app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
 
-connect_db(app)
+
 toolbar = DebugToolbarExtension(app)
 
 fav_artwork = ArtworkFavorites.fav_artwork
@@ -34,17 +34,18 @@ unfavorite_artwork = ArtworkFavorites.unfavorite_artwork
 ##############################################################################
 # User signup/login/logout
 
-
-
+with app.app_context():
+        db.app = app
+        db.init_app(app)
 
 
 @app.before_request
 def initialize_app():
     """initiailiaze application & create necessary directories"""
-    
     create_directories()
     add_user_to_g()
     
+
 
 def add_user_to_g():
     """If we're logged in, add curr user to Flask global."""

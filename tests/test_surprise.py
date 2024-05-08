@@ -1,6 +1,6 @@
 from unittest import TestCase
 from unittest.mock import patch
-from api_requests import APIRequests
+import api_requests
 from models import User, Century, db, Artwork, Artist, Favorite, NotFavorite
 import os
 import logging
@@ -75,7 +75,7 @@ class SurpriseViewTestCase(TestCase):
             self.assertEqual(res.status_code, 200)
             self.assertIn("Access unauthorized.", html)
 
-    @patch('APIRequests.surprise_me')
+    @patch('app.APIRequests.surprise_me')
     def test_suprise_me(self, mock_surprise_me):
         """Test accessing Surprise Me route with a logged-in user."""
         # Setup mock
@@ -90,7 +90,7 @@ class SurpriseViewTestCase(TestCase):
             self.assertEqual(res.status_code, 200)
             self.assertIn("Mona Lisa", html)
 
-    @patch('APIRequests.surprise_me')
+    @patch('app.APIRequests.surprise_me')
     def test_surprise_me_favorite_(self, mock_surprise_me):
         """Test POST action for favoriting an artwork via the Surprise me route"""
         #setup mock

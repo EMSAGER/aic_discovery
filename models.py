@@ -132,13 +132,4 @@ class Century(db.Model):
     century_name = db.Column(db.Text, unique=True, nullable=False)
     
 
-def connect_db(app):
-    """Connect this database to provided Flask app.
 
-    You should call this in your Flask app.
-    """
-    with app.app_context():
-        db.app = app
-        db.init_app(app)
-        db.drop_all()
-        db.create_all()
