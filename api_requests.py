@@ -67,10 +67,10 @@ class APIRequests:
         return favorite_artwork_ids, not_favorite_artwork_ids
     
     @classmethod
-    def  get_artworks(cls, user):
+    def get_artworks(cls, user):
         """Method to get artwork from the API"""
         user_century = Century.query.get(user.century_id).century_name
-        # date_range = cls.century_dates.get(user_century, (None, None))
+        
         total_art_for_app = 50
         saved_artworks = []
         page = 1
@@ -82,9 +82,7 @@ class APIRequests:
             'limit': 100,
             'page' : page,
             'fields': 'id,title,artist_title,image_id,dimensions,medium_display,date_display,date_start,date_end, artist_display',
-            'excluded_ids': ','.join(map(str, favorite_artwork_ids + not_favorite_artwork_ids)),
-            # 'date_start_gte': date_range[0],
-            # 'date_end_lte': date_range[1]
+            'excluded_ids': ','.join(map(str, favorite_artwork_ids + not_favorite_artwork_ids))
         }
 
         #fetch data until enough artworks are collected
@@ -118,7 +116,6 @@ class APIRequests:
             return None, "No unchosen centuries found."
 
         random_century = random.choice(unchosen_centuries)
-        date_range = cls.century_dates.get(random_century, (None, None))
         total_surprise = 50
 
         page = 1
@@ -130,9 +127,7 @@ class APIRequests:
             'limit': 100,
             'page' : page,
             'fields': 'id,title,artist_title,image_id, dimensions,medium_display,date_display,date_start,date_end, artist_display',
-            'excluded_ids': ','.join(map(str, favorite_artwork_ids + not_favorite_artwork_ids)),
-            'date_start_gte': date_range[0],
-            'date_end_lte': date_range[1]
+            'excluded_ids': ','.join(map(str, favorite_artwork_ids + not_favorite_artwork_ids))
         }
 
         #fetch data until enough artworks are collected
@@ -141,11 +136,15 @@ class APIRequests:
             if error or not artworks:
                 return saved_artworks, error  
             for artwork in artworks:
-                if len(saved_artworks) >= total_surprise:
-                    break
-                saved_artwork_surprise = save_artwork(artwork_detail=artwork)
-                if saved_artwork_surprise:
-                    saved_artworks.append(saved_artwork_surprise)
+                sopresa = cls.filter_dates(artwork, random_century)
+                if sopresa:
+                    saved_artwork_surprise = save_artwork(artwork_detail=sopresa)
+                    if saved_artwork_surprise:
+                        saved_artworks.append(saved_artwork_surprise)
+                    if len(saved_artworks) >= total_surprise:
+                        break
+                
+                
             page += 1
             query_params['page'] = page
 
