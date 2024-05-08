@@ -70,7 +70,7 @@ class Artist(db.Model):
     artist_display = db.Column(db.Text)
     
     
-    artworks = db.relationship('Artwork',  cascade="all,delete", backref='artist', lazy=True)
+    artworks = db.relationship('Artwork', backref='artist', cascade="all, delete-orphan",  lazy=True)
 
 
 class Artwork(db.Model):

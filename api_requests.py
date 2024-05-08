@@ -52,11 +52,11 @@ class APIRequests:
                 return response.json()['data'], None
             else:
             # Properly handle non-200 responses
-                flash(f"API_REQUESTS-Failed to fetch artworks from API: {response.status_code}", "danger")
+                flash(f"Failed to fetch artworks from API: {response.status_code}", "danger")
                 return None, f"Failed with status code {response.status_code}"
         except requests.RequestException as e:
             # Handle connection errors
-            flash(f"API_REQUESTS-Error connecting to the Art Institute of Chicago API: {e}", "danger") 
+            flash(f"Error connecting to the Art Institute of Chicago API: {e}", "danger") 
             return None, str(e)
         
     @classmethod
@@ -101,7 +101,7 @@ class APIRequests:
                         saved_artworks.append(saved_artwork) 
                     if len(saved_artworks) >= total_art_for_app:
                         break
-                    
+
             page += 1
             query_params['page'] = page
         return saved_artworks

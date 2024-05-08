@@ -38,21 +38,11 @@ class TestAPIRequests(TestCase):
         self.app_context.push()  
         db.create_all()
         self.populate_db()
-        
-    def tearDown(self):
-        """Clean up any fouled transaction."""
-        db.session.remove()
-        db.drop_all()
-        self.app_context.pop()
-
+    
     def populate_db(self):
         """Runs before each test"""
-        Favorite.query.delete()
-        NotFavorite.query.delete()
-        User.query.delete()
-        Century.query.delete()
-        Artist.query.delete()
-        Artwork.query.delete()
+        db.drop_all()
+        db.create_all()
     
         #order of commiting is necessary
         century = Century(id=1, century_name='19th Century')
@@ -112,6 +102,13 @@ class TestAPIRequests(TestCase):
         self.favorite = favorite
         self.not_favorite = not_favorite
         self.century = century
+        
+    def tearDown(self):
+        """Clean up any fouled transaction."""
+        db.session.remove()
+        db.drop_all()
+        db.session.commit()
+        self.app_context.pop()
 
     @patch('api_requests.requests.get')
     def test_get_artworks(self, mock_get):

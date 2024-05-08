@@ -37,6 +37,7 @@ unfavorite_artwork = ArtworkFavorites.unfavorite_artwork
 with app.app_context():
         db.app = app
         db.init_app(app)
+        db.create_all()
 
 
 @app.before_request
