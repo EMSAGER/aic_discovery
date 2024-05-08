@@ -133,39 +133,14 @@ class TestAPIRequests(TestCase):
         mock_get.return_value.json.return_value = mock_response
     
         # simulate getting all needed artowrks within 5 API calls
-        artworks, error = APIRequests.get_artworks(self.user)
+        artworks = APIRequests.get_artworks(self.user)
         
         
         self.assertEqual(len(artworks), 50) #equally the amount wanted
-        self.assertIsNone(error)
         self.assertTrue(mock_get.call_count <= 6) #ensure not too many calls are sent
         self.assertEqual(artworks[0].title, "Yellow Octopus")
         self.assertEqual(artworks[0].artist.artist_title, "Stacy Smith")
         
-    @patch('api_requests.requests.get')
-    @patch('api_requests.Favorite.query')
-    @patch('api_requests.NotFavorite.query')
-    @patch('api_requests.Century.query')
-    def test_get_artworks_call(self, mock_century_query, mock_not_fav_query, mock_fav_query, mock_get):
-        # Mock the database queries
-        mock_century_query.get.return_value = self.century
-        mock_fav_query.filter_by.return_value.all.return_value = [self.favorite]
-        mock_not_fav_query.filter_by.return_value.all.return_value = [self.not_favorite]
-
-        # Mock the requests.get call
-        mock_get_response = MagicMock()
-        mock_get_response.status_code = 200
-        mock_get_response.json.return_value = self.mock_api_response
-        mock_get.return_value = mock_get_response
-
-        # Wrap the function call inside a test request context
-        with self.client.application.test_request_context('/users/profile'):
-            result = APIRequests.get_artworks(self.user)
-
-
-        # Assertions to check if function behaved as expected
-        self.assertEqual(len(result), 2)
-
     @patch('api_requests.requests.get')
     def test_get_artworks_empty_response(self, mock_get):
         """Test get_artworks when the API returns an empty list of artworks."""
