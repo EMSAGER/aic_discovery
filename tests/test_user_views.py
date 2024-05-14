@@ -1,11 +1,12 @@
 from unittest import TestCase
+from unittest.mock import patch
 from models import User, Century, db, Artwork
 import os
 import logging
 
 
 # Set up logging
-logging.basicConfig(level=logging.WARNING)  # Set to WARNING to reduce output, or ERROR to make it even less verbose
+logging.basicConfig(level=logging.ERROR)  # Set to WARNING to reduce output, or ERROR to make it even less verbose
 
 # Adjust logging level for SQLAlchemy specifically if needed
 logging.getLogger('sqlalchemy.engine').setLevel(logging.CRITICAL)
@@ -22,59 +23,58 @@ os.environ['DATABASE_URL'] = "postgresql:///test_aic_capstone"
 #import the app
 from app import app, CURR_USER_KEY
 
+app.config['TESTING'] = True
 app.config['WTF_CSRF_ENABLED'] = False
+app.config['DEBUG'] = False
+app.config['SQLALCHEMY_ECHO'] = False
 
 
 class UserViewTestCase(TestCase):
     """Tests for user related routes"""
-    def setUp(self):
-        """Create test client add sample data"""
-        self.client = app.test_client()
-        self.app_context = app.app_context()
-        self.app_context.push()  
-        db.create_all()
-        self.populate_db()
-        
-       
-    def tearDown(self):
+    @classmethod
+    def setUp(cls):
+        """Set up db before tests are run"""
+        cls.client = app.test_client()
+        cls.app_context = app.app_context()
+        cls.app_context.push()
+        db.create_all()  
+        cls.populate_db()   
+
+    @classmethod   
+    def tearDown(cls):
         """Clean up any fouled transaction."""
         db.session.remove()
         db.drop_all()
-        self.app_context.pop()
+        cls.app_context.pop()
 
-    def populate_db(self):
+    @classmethod 
+    def populate_db(cls):
         """Set up the db with the initial data - helper method"""
-        User.query.delete()
         Century.query.delete()
+        User.query.delete()
         Artwork.query.delete()
+        
         c_18 = Century(century_name="18th Century")
         c_19 = Century(century_name="19th Century")
         c_20 = Century(century_name="20th Century")
         db.session.add_all([c_18, c_19, c_20])
         db.session.commit()
 
-        self.u1 = User.signup(username="testpotato",
+        cls.u1 = User.signup(username="testpotato",
                               first_name="Bob",
                               last_name="taco",
                               email="test@test.com",
                               password="testuser",
                               century_id=c_18.id)
         
-        self.u2 = User.signup(username="testuser2",
+        cls.u2 = User.signup(username="testuser2",
                               first_name="Bob2",
                               last_name="taco2",
                               email="test2@test.com",
                               password="testuser2",
                               century_id=c_19.id) 
         
-        self.u3 = User.signup(username="testuser3",
-                              first_name="Bob3",
-                              last_name="taco3",
-                              email="test3@test.com",
-                              password="testuser3",
-                              century_id=c_20.id) 
-        
-        db.session.add_all([self.u1, self.u2, self.u3])
+        db.session.add_all([cls.u1, cls.u2])
 
         db.session.commit()
 

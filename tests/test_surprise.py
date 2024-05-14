@@ -3,7 +3,6 @@ from unittest.mock import patch
 from models import User, Century, db, Artwork, Artist, Favorite, NotFavorite
 import os
 import logging
-from flask_sqlalchemy import SQLAlchemy
 
 # Set up logging
 logging.basicConfig(level=logging.ERROR)  # Set to WARNING to reduce output, or ERROR to make it even less verbose
