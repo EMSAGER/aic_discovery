@@ -275,8 +275,9 @@ def surprise_home():
         action = request.form.get('action')
 
         if action == 'favorite':
-            fav_artwork(user, artwork_id)
-            db.session.commit()
+            res = fav_artwork(user, artwork_id)
+            if res == 201:
+                db.session.commit()
         elif action == 'not_favorite':
             unfavorite_artwork(user, artwork_id)
             db.session.commit()
