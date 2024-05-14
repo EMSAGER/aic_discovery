@@ -17,7 +17,7 @@ class SaveArtwork:
                 db.session.commit()
             except Exception as e:
                 db.session.rollback()
-                flash(f"ARTWORK.PY-An error occurred while saving the artist: {e}", "danger")
+                flash(f"An error occurred while saving the artist: {e}", "danger")
                 return None
 
         #check if an artwork with the provided id already exists
@@ -55,7 +55,7 @@ class SaveArtwork:
             return artwork
         except Exception as e:
             db.session.rollback()
-            flash(f"ARTWORK.PY:An error occurred while saving the artwork: {e}", "danger")
+            flash(f"An error occurred while saving the artwork: {e}", "danger")
             return None
         
     @classmethod
@@ -79,4 +79,4 @@ class SaveArtwork:
                         print(flash.__class__)
                         flash("Images successfully saved.", "success")
         except Exception as e:
-            flash("ARTWORK.PY-Failed to download image", "danger")
+            flash("Failed to download image", "danger")

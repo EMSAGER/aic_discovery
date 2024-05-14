@@ -130,7 +130,6 @@ class ArtworkViewTestCase(TestCase):
                 with c.session_transaction() as sess:
                     sess[CURR_USER_KEY] = self.u1.id
 
-                
                 res = c.post('/users/profile', data={'artwork_id': self.test_art_a.id, 'action': 'not_favorite'}, follow_redirects=True)
                 html = res.get_data(as_text=True)
             
