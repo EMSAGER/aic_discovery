@@ -12,38 +12,38 @@
     
     <title>{% block title %}{% endblock %}</title>
 </head>
-<body>
-  <nav class="navbar navbar-expand">
-    <div class="container-fluid">
-      <div class="navbar-header">
-        {% if not g.user %}
-        <a href="/" class="navbar-brand">
-          <span>AIC Discovery</span>
+  <body>
+    <nav class="navbar navbar-expand-lg">
+      <div class="container-fluid">
+        <!-- Brand/logo -->
+        <a class="navbar-brand" href="/">
+          <span>{% if not g.user %}AIC Discovery{% else %}{{ user.full_name }}{% endif %}</span>
         </a>
-      </div>
-        <div class="navbar-collapse">
-          <a class="navbar-form" href="/signup">Sign up</a>
-          <a class="navbar-form" href="/login">Log in</a>
+        <!-- Toggler/collapsible Button -->
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <!-- Nav Bar Links -->
+        <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+          <div class="navbar-nav">
+            {% if not g.user %}
+            <a class="nav-link" href="/signup">Sign up</a>
+            <a class="nav-link" href="/login">Log in</a>
+            {% else %}
+            <a class="nav-link" href="/users/profile/edit">Edit Profile</a>
+            <a class="nav-link" href="/users/favorites">Favorites</a>
+            <a class="nav-link" href="/users/surprise">Suprise Me!</a>
+            <a class="nav-link" href="/logout">Log out</a>
+            {% endif %}
+          </div>
         </div>
-        {% else %}
-        <a href="/users/profile" class="navbar-brand">
-          <span>{{ user.full_name }}</span>
-        </a>
       </div>
-        <div class="navbar-collapse">
-          <a class="navbar-form" href="/users/profile/edit">Edit Profile</a>
-          <a class="navbar-form" href="/users/favorites">Favorites</a>
-          <a class="navbar-form" href="/users/surprise">Suprise Me!</a>
-          <a class="navbar-form" href="/logout">Log out</a>
-        </div>
-        {% endif %}
-    </div>
-  </nav>
+    </nav>
     <div class="container">
       {% for category, message in get_flashed_messages(with_categories=True) %}
       <div class="alert alert-{{ category }}">{{ message }}</div>
       {% endfor %}
-      
+      <!-- content block -->
     {% block content %}{% endblock %}
     </div>
     
@@ -51,11 +51,9 @@
       <a href="https://api.artic.edu/docs/#quick-start">Art Institute of Chicago API Documentation</a>
     </footer>  
 
-    <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
-    <script src="https://unpkg.com/bootstrap"></script>
-    <script src="https://unpkg.com/jquery"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+    <script src="https://unpkg.com/bootstrap/dist/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  
-</body>
-
+  </body>
 </html>
