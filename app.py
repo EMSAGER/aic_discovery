@@ -18,12 +18,13 @@ HEADER = {
 }
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ECHO"] = True
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
-
+print(repr(app.config))
+print(app.config)
 toolbar = DebugToolbarExtension(app)
 
 fav_artwork = ArtworkFavorites.fav_artwork
