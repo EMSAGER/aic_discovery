@@ -249,4 +249,47 @@ class TestAPIRequests(TestCase):
         expected_message = ('danger', "Failed to fetch artworks from API: 500")
         self.assertIn(expected_message, flashed_messages)
 
+    def test_filter_dates_within_range(self):
+        """Test filtering artworks within the specified century range."""
+        artwork = {
+            'date_start': '1850', 
+            'date_end': '1855'
+        }
+        user_century = '19th Century'
+        result = APIRequests.filter_dates(artwork, user_century)
+        # expecting the same artwork if the dates match the century
+        expected_result = artwork 
+        
+        self.assertIsNotNone(result)
+        self.assertEqual(result, expected_result)
+
+    def test_filter_dates_outside_range(self):
+        """Test filtering artworks outside the specified century range."""
+        artwork = {
+            'date_start': '1650',
+            'date_end': '1655'
+        }
+        user_century = '18th Century'
+        result = APIRequests.filter_dates(artwork, user_century)
+        self.assertIsNone(result)
+
+    def test_filter_dates_invalid_dates(self):
+        """Test filtering with invalid date ranges."""
+        artwork = {
+            'date_start': 'bad_date',
+            'date_end': 'bad_date'
+        }
+        user_century = '18th Century'
+        with self.assertRaises(ValueError):
+            APIRequests.filter_dates(artwork, user_century)
+
+    def test_filter_dates_no_century_data(self):
+        """Test filtering when no century data is available."""
+        artwork = {
+            'date_start': '1790',
+            'date_end': '1795'
+        }
+        user_century = '21st Century'  # Assuming no data for 21st Century
+        result = APIRequests.filter_dates(artwork, user_century)
+        self.assertIsNone(result)
     
