@@ -36,13 +36,13 @@
                 <input type="hidden" name="artwork_id" value="{{ selected_artwork.id }}">
                 <input type="hidden" name="action" value="favorite">
                 {{ form.csrf_token }}
-                <button type="submit" class="btn btn-success"><i class="fa-regular fa-thumbs-up"></i> Like</button>
+                <button type="submit" class="btn btn-success btn-lg"><i class="fa-regular fa-thumbs-up"></i> Like</button>
             </form>
             <form method="post" class="un-favorite-form">
                 <input type="hidden" name="artwork_id" value="{{ selected_artwork.id }}">
                 <input type="hidden" name="action" value="not_favorite">
                 {{ form.csrf_token }}
-                <button type="submit" class="btn btn-danger"><i class="fa-regular fa-thumbs-down"></i> Dislike</button>
+                <button type="submit" class="btn btn-danger btn-lg"><i class="fa-regular fa-thumbs-down"></i> Dislike</button>
             </form>
         </div>
     </div>
