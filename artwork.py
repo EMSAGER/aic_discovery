@@ -77,6 +77,6 @@ class SaveArtwork:
                     with open(image_path, 'wb') as image_file:
                         image_file.write(res.content)
                         print(flash.__class__)
-                        flash("Images successfully saved.", "success")
+                        # flash("Images successfully saved.", "success")
         except Exception as e:
             flash("Failed to download image", "danger")

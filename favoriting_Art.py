@@ -21,31 +21,27 @@ class ArtworkFavorites:
 
         artwork = Artwork.query.get(artwork_id)
         if not artwork:
-            logging.error(f"No artwork found with ID {artwork_id}.")
             return cls.NO_ARTWORK
 
         if not artwork.artist_id:
-            logging.error(f"No artist ID found for artwork ID {artwork_id}.")
             return cls.NO_ARTIST_ID
 
         existing_favorite = Favorite.query.filter_by(
             user_id=user.id, artwork_id=artwork_id, artist_id=artwork.artist_id).first()
         if existing_favorite:
-           logging.info("Artwork already favorited.")
            return 200
         
         new_favorite = Favorite(user_id=user.id, artwork_id=artwork_id, artist_id=artwork.artist_id)
         db.session.add(new_favorite)
         db.session.commit()
-        logging.info("Artwork favorited succesfully.")
+        
 
         #save artwork image
         if artwork.image_url and artwork.image_id:
             try:
                 save_image(artwork.image_url, artwork.image_id, artwork.title)
             except Exception as e:
-                logging.error(f"Failed to save image for artwork ID {artwork_id}: {e}")
-        return 201
+                return 201
     
 
     @classmethod
@@ -76,17 +72,17 @@ class ArtworkFavorites:
     def unfavorite_artwork(cls, user, artwork_id):
         """Removes an artwork from the user's favorites."""
         if not user:
-            logging.error("No user provided for unfavoriting artwork.")
+            
             return cls.NO_USER
 
         favorite = Favorite.query.filter_by(user_id=user.id, artwork_id=artwork_id).first()
         if not favorite:
-            logging.warning(f"No favorite found to unfavorite for artwork ID {artwork_id}.")
+            
             return cls.NO_ARTWORK
 
         db.session.delete(favorite)
         db.session.commit()
-        logging.info(f"Artwork ID {artwork_id} unfavorited successfully.")
+     
         return 200
       
   

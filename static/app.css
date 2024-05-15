@@ -35,3 +35,35 @@
     height: 500px; 
     object-fit: cover;
 }
+
+.footer {
+    width: 100%;
+    background-color: #f8f9fa;
+    color: #3c3b3b; 
+    text-align: center;
+    text-decoration: none;
+    padding: 10px 0;
+    font-size: small;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+}
+
+#buttons {
+    border: none;
+    background: none;
+    box-shadow: none;
+}
+
+/* Ensure the main content pushes the footer down */
+body, html {
+    height: 100%;
+    margin: 0;
+}
+
+.container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 60px;
+}

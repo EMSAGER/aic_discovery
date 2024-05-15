@@ -117,7 +117,7 @@ def signup():
             # flash("User successfully registered.", 'success')
             return redirect('/users/profile') 
         
-        except IntegrityError:
+        except ValueError:
             db.session.rollback()
             flash("Username already taken", 'danger')
     
@@ -288,8 +288,8 @@ def surprise_home():
     artworks_details, random_century = APIRequests.surprise_me(user)
 
     if artworks_details:
-        artwork_to_display = random.choice(artworks_details)
-        return render_template('/users/surprise.html', artwork=artwork_to_display, user=user, form=form, century=random_century)
+        artwork = random.choice(artworks_details)
+        return render_template('/users/surprise.html', artwork=artwork, user=user, form=form, century=random_century)
     
     else:
         flash("Failed to fetch SURPRISE data.", "danger")

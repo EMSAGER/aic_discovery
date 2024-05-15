@@ -5,8 +5,9 @@
 
 {% block content %}
 
-<h2>Artwork from the {{ century }}</h2>
-<p>The purpose of this section is to introduce you to artwork from other centuries.</p>
+<h2 class="display-1 text-center">Artwork from the {{ century }}</h2>
+<p class="text-center">The purpose of this section is to introduce you to artwork from other centuries.</p>
+{% if artwork %}
 <div class="container mt-5">
     <div class="row align-items-start">
         <!-- Sidebar with Artwork Details -->
@@ -34,7 +35,7 @@
             <img src="{{ artwork.image_url }}" class="img-fluid" alt="Artwork image">
         </div>
         <!-- Column for buttons -->
-        <div class="col-md-3 d-flex flex-column justify-content-start">
+        <div class="col-md-3 d-flex align-items-top flex-row justify-content-around">
             <form method="post" class="favorite-form">
                 <input type="hidden" name="artwork_id" value="{{ artwork.id }}">
                 <input type="hidden" name="action" value="favorite">
@@ -50,7 +51,7 @@
         </div>
     </div>
 </div>
-
+{% endif %}
 
 {% endblock %}
 
