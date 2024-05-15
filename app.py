@@ -18,12 +18,11 @@ HEADER = {
 }
 
 app = Flask(__name__)
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql:///aic_capstone"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ECHO"] = True
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
-app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
-app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql:///aic_capstone"
-
+app.config["SECRET_KEY"] = "CQASDFKLAGY4O;GHBZSDCJ245T654#%@#asthgj"
 
 toolbar = DebugToolbarExtension(app)
 
