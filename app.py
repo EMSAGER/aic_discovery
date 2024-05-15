@@ -22,9 +22,8 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ECHO"] = True
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
-app.config['SQLALCHEMY_DATABASE_URI'] = (
-    os.environ.get('DATABASE_URL', 'postgresql://aic_capstone'))
 
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv('postgresql://aic_capstone')
 
 toolbar = DebugToolbarExtension(app)
 
