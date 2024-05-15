@@ -2,7 +2,7 @@ from flask import Flask, render_template, redirect, session, flash, g, request
 from flask_debugtoolbar import DebugToolbarExtension
 from  models import db, User, Favorite, Artwork, Century
 from  forms import UserEditForm, UserForm, LoginForm, FavoriteForm
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import ValueError
 from  api_requests import APIRequests
 from  favoriting_Art import ArtworkFavorites
 import random
@@ -23,7 +23,8 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ECHO"] = True
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
+app.config['SQLALCHEMY_DATABASE_URI'] = (
+    os.environ.get('DATABASE_URL', 'postgresql://aic_capstone'))
 
 
 toolbar = DebugToolbarExtension(app)
