@@ -148,6 +148,7 @@ def logout():
     """Handle logout of user."""
     if CURR_USER_KEY in session:
         del session[CURR_USER_KEY]
+    g.user = None
     flash("Goodbye!", "primary")
     return redirect('/login')
 
@@ -237,8 +238,8 @@ def all_favorites():
 
 
     favorites = (db.session.query(Favorite, Artwork)
-                 .join(Artwork)
-                 .filter(Favorite.artwork_id == Artwork.id)
+                 .join(Artwork, Favorite.artwork_id == Artwork.id)
+                 .filter(Favorite.user_id == g.user.id)
                  .all())
     
     seen = set()
