@@ -2,7 +2,6 @@ from flask import Flask, render_template, redirect, session, flash, g, request
 from flask_debugtoolbar import DebugToolbarExtension
 from  models import db, User, Favorite, Artwork, Century
 from  forms import UserEditForm, UserForm, LoginForm, FavoriteForm
-from sqlalchemy.exc import ValueError
 from  api_requests import APIRequests
 from  favoriting_Art import ArtworkFavorites
 import random
